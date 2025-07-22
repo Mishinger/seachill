@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PIN Settings • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <h1>🔐 PIN settings</h1>
+      <p>Secure your SeaChill profile with an emoji passcode</p>
+    </header>
+
+    <section class="card">
+      <label>
+        <input type="checkbox" id="checkbox" />
+        Enable 4-emoji PIN
+      </label>
+      <input
+        id="pinInput"
+        type="text"
+        maxlength="10"
+        autocomplete="off"
+        placeholder="🦀🌴☀️🏄" />
+      <br/><br/>
+      <button id="saveBtn" class="button button-accent">Save</button>
+      <button onclick="window.location.href='settings.html'" class="button button-default">Cancel </button>
+    </section>
+  </main>
+
+  <script>
+    // --- Theme ---
+    const themeMap = {
+      light: "light.css",
+      dark: "dark.css",
+      twilight: "twilight.css",
+      jungle: "jungle.css",
+      breeze: "breeze.css",
+      void: "void.css"
+    };
+    const savedTheme = localStorage.getItem("preferredTheme") || "system";
+    const themeLink = document.getElementById("themeStylesheet");
+    if (themeMap[savedTheme]) {
+      themeLink.href = themeMap[savedTheme];
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      themeLink.href = prefersDark ? themeMap.dark : themeMap.light;
+    }
+
+    // --- Elements ---
+    const checkbox = document.getElementById("checkbox");
+    const pinInput = document.getElementById("pinInput");
+    const saveBtn = document.getElementById("saveBtn");
+
+    // --- Load State ---
+    checkbox.checked = localStorage.getItem("enablePIN") === "true";
+    pinInput.style.display = checkbox.checked ? "block" : "none";
+
+    // --- Bind Enable Toggle ---
+    checkbox.addEventListener("change", () => {
+      const enabled = checkbox.checked;
+      localStorage.setItem("enablePIN", enabled.toString());
+      pinInput.style.display = enabled ? "block" : "none";
+      if (!enabled) {
+        localStorage.removeItem("emojiPIN");
+      }
+    });
+
+    // --- Trim to 4 emojis on input ---
+    pinInput.addEventListener("input", () => {
+      const graphemes = Array.from(pinInput.value);
+      if (graphemes.length > 4) {
+        pinInput.value = graphemes.slice(0, 4).join("");
+      }
+    });
+
+    // --- Save PIN ---
+    saveBtn.onclick = () => {
+      const pin = Array.from(pinInput.value).slice(0, 4).join("").trim() || "fico";
+      if (pin.length < 4) {
+        alert("⚠️ Bro, enter 4 emojis!");
+        return;
+      }
+      localStorage.setItem("emojiPIN", pin);
+      window.location.href = "settings.html"
+    };
+  </script>
+</body>
+</html>

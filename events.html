@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Event Settings • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+  <style>
+    .rule {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid var(--border, #ddd);
+    }
+    .rule span {
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <button onclick="window.location.href='select.html'" class="button button-text">← Back</button>
+  <h1>⚙️ Event Settings</h1>
+
+  <div>
+    When
+    <select id="eventSelect">
+      <option value="onBeachSelected">onBeachSelected</option>
+      <option value="onLowTide">onLowTide</option>
+      <option value="onHeatwave">onHeatwave</option>
+    </select>
+    → then
+    <select id="actionSelect">
+      <option value="showToast">showToast</option>
+      <option value="vibrateDevice">vibrateDevice</option>
+      <option value="sendEmail">sendEmail</option>
+      <option value="openModal">openModal</option>
+    </select>
+    <button onclick="addRule()" class="button button-accent">➕ Add</button>
+  </div>
+
+  <div style="margin-top: 2rem">
+    <h3>📋 Rules</h3>
+    <div id="rulesList"></div>
+  </div>
+</main>
+
+<script>
+  const themeMap = {
+    light: "light.css",
+    dark: "dark.css",
+    twilight: "twilight.css",
+    jungle: "jungle.css",
+    breeze: "breeze.css",
+    void: "void.css"
+  };
+  const saved = localStorage.getItem("preferredTheme") || "system";
+  const link = document.getElementById("themeStylesheet");
+  link.href = themeMap[saved] || (
+    window.matchMedia("(prefers-color-scheme: dark)").matches ? themeMap.dark : themeMap.light
+  );
+
+  const ruleKey = "beachEvents";
+  const rulesList = document.getElementById("rulesList");
+
+  function loadRules() {
+    return JSON.parse(localStorage.getItem(ruleKey) || "{}");
+  }
+  function saveRules(obj) {
+    localStorage.setItem(ruleKey, JSON.stringify(obj));
+  }
+  function addRule() {
+    const event = document.getElementById("eventSelect").value;
+    const action = document.getElementById("actionSelect").value;
+    const rules = loadRules();
+    rules[event] = action;
+    saveRules(rules);
+    renderRules();
+  }
+  function deleteRule(event) {
+    const rules = loadRules();
+    delete rules[event];
+    saveRules(rules);
+    renderRules();
+  }
+  function renderRules() {
+    const rules = loadRules();
+    rulesList.innerHTML = "";
+    Object.entries(rules).forEach(([event, action]) => {
+      const row = document.createElement("div");
+      row.className = "rule";
+      row.innerHTML = `
+        <span>"${event}": "${action}"</span>
+        <button onclick="deleteRule('${event}')" class="button button-text">❌</button>
+      `;
+      rulesList.appendChild(row);
+    });
+  }
+
+  renderRules();
+</script>
+</body>
+</html>

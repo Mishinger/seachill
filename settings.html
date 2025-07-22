@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Settings • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <h1>⚙️ SeaChill settings</h1>
+      <p>Customize your ideal beach day experience</p>
+    </header>
+
+    <section class="card">
+      <form id="settingsForm">
+        <label>Theme</label>
+        <div class="theme-grid">
+          <div class="theme-card" data-theme="light" title="Beach">☀️</div>
+          <div class="theme-card" data-theme="dark" title="Tide">🌊</div>
+          <div class="theme-card" data-theme="twilight" title="Twilight">🌆</div>
+          <div class="theme-card" data-theme="jungle" title="Jungle">🌿</div>
+          <div class="theme-card" data-theme="breeze" title="Breeze">💧</div>
+          <div class="theme-card" data-theme="void" title="Void">🟣</div>
+        </div>
+
+        <br /><br />
+
+        <label for="preferredTemp">Favorite beach temp</label>
+        <input
+          type="number"
+          id="preferredTemp"
+          name="preferredTemp"
+          placeholder="e.g. 30"
+          step="1"
+        />
+        <label for="seaTemp">Favorite sea temp</label>
+        <input
+          type="number"
+          id="seaTemp"
+          name="seaTemp"
+          placeholder="e.g. 28"
+          step="1"
+        />
+        <label for="tempTolerance">Comfort room</label>
+        <input
+          type="number"
+          id="tempTolerance"
+          name="tempTolerance"
+          placeholder="e.g. 3"
+          step="1"
+          required
+        />
+
+        <br /><br />
+
+        <button type="submit" class="button button-accent">OK</button>
+      </form>
+    </section>
+
+    <footer>
+      <h3>Other options</h3>
+      <button type="button" onclick="window.location.href='about.html'" class="button button-default">About and cookies</button>
+      <button type="button" onclick="const from = encodeURIComponent('settings.html'); const to = encodeURIComponent('data.html');  window.location.href = `auth.html?from=${from}&to=${to}`;" class="button button-default">Data management</button>
+      <button type="button" onclick="const from2 = encodeURIComponent('settings.html'); const to2 = encodeURIComponent('pin.html');  window.location.href = `auth.html?from=${from2}&to=${to2}`;" class="button button-default">PIN settings</button>
+      <button type="button" onclick="window.location.href='alerts.html'" class="button button-default">Alert options</button>
+    </footer>
+  </main>
+
+  <script>
+    const form = document.getElementById("settingsForm");
+
+    const themeMap = {
+      light: "light.css",
+      dark: "dark.css",
+      twilight: "twilight.css",
+      jungle: "jungle.css",
+      breeze: "breeze.css",
+      void: "void.css"
+    };
+
+    function applyTheme(theme) {
+      const link = document.getElementById("themeStylesheet");
+      if (themeMap[theme]) {
+        link.href = themeMap[theme];
+      } else {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        link.href = prefersDark ? themeMap.dark : themeMap.light;
+      }
+    }
+
+    const themeDots = document.querySelectorAll(".theme-card");
+    const themeLink = document.getElementById("themeStylesheet");
+
+    themeDots.forEach(dot => {
+      dot.addEventListener("click", () => {
+        const selected = dot.dataset.theme;
+        localStorage.setItem("preferredTheme", selected);
+        applyTheme(selected);
+
+        themeDots.forEach(d => d.classList.remove("selected"));
+        dot.classList.add("selected");
+      });
+    });
+
+    // Pre-select active theme
+    const current = localStorage.getItem("preferredTheme");
+    if (current) {
+      const active = document.querySelector(`[data-theme="${current}"]`);
+      if (active) active.classList.add("active");
+      applyTheme(current);
+    }
+
+    window.addEventListener("load", () => {
+      const savedTheme = localStorage.getItem("preferredTheme") || "light";
+      const savedTemp = localStorage.getItem("preferredBeachTemp") || "";
+      const seaTemp = localStorage.getItem("seaTemp") || "";
+      const savedTolerance = localStorage.getItem("tempTolerance") || "";
+
+      // No form.theme field; set active theme card and apply theme
+      const active = document.querySelector(`[data-theme="${savedTheme}"]`);
+      if (active) active.classList.add("selected");
+      form.preferredTemp.value = savedTemp;
+      form.seaTemp.value = seaTemp;
+      form.tempTolerance.value = savedTolerance;
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const selectedTheme = localStorage.getItem("preferredTheme") || "light";
+      const tempPref = form.preferredTemp.value.trim();
+      const seaTemp = form.seaTemp.value.trim();
+      const tolerance = form.tempTolerance.value.trim();
+
+      // Validate that tolerance is a number and within range
+      if (isNaN(tolerance) || tolerance === "" || Number(tolerance) < 0 || Number(tolerance) > 50) {
+        alert("Please enter a valid temperature tolerance between 0 and 50°C.");
+        form.tempTolerance.focus();
+        return;
+      }
+
+      localStorage.setItem("preferredBeachTemp", tempPref);
+      localStorage.setItem("tempTolerance", tolerance);
+      localStorage.setItem("seaTemp", seaTemp);
+
+      applyTheme(selectedTheme);
+      window.location.href = "index.html";
+    });
+    });
+  </script>
+</body>
+</html>

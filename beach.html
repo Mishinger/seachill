@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
+  <title>Beach details • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <style>
+    #recContainer {
+      border-radius: 8px;
+      padding: 1rem;
+      color: white;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 1rem;
+      cursor: pointer;
+    }
+    canvas {
+      margin-top: 1rem;
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <button onclick="location.href='select.html'" class="button button-text">← Back</button>
+    <h1 id="beachTitle"><strong>🏖️ Beach</strong></h1>
+    <p id="coords" style="margin-bottom: 1.5rem;"></p>
+    <p id="status"></p>
+
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem;">
+      <button id="mapBtn" class="button button-default">📍 Open in Google Maps</button>
+      <button id="favBtn" class="button button-default">💙 Add to Favorites</button>
+    </div>
+
+    <section>
+      <h2>🌤️ Current Weather</h2>
+      <p id="weatherSummary">Loading...</p>
+      <ul style="list-style: none; padding-left: 0;">
+        <li>🌡️ Air temp: <strong id="tempValue">—</strong>°C</li>
+        <li>🌊 Sea temp: <strong id="seaValue">—</strong>°C</li>
+        <li>💨 Wind: <strong id="windValue">—</strong> km/h</li>
+        <li>🍃 Air quality (PM 2.5): <strong id="airValue">—</strong></li>
+        <li>💧 Humidity: <strong id="humidityValue">—</strong>%</li>
+        <li>☀️ UV index: <strong id="uvValue">—</strong></li>
+        <li>🌊 Wave height: <strong id="waveValue">—</strong>m</li>
+      </ul>
+      <h3>⚠️ Current Warnings</h3>
+      <div id="warnings-here" class="card-section">🍸 There are no warnings right now</div>
+      <div id="alert-section">
+        <h3>🐚 Alerts</h3>
+        <p>Get notified on your smart watch when the weather changes</p>
+        <input type="checkbox" id="alertToggle" />
+        <label for="alertToggle">Enable alerts for this beach</label>
+        <p id="alertDesc"><em>Alerts disabled. You won't get notifications.</em></p>
+      </div>
+      <h3>🏄 Recommendation</h3>
+      <div id="recContainer">Calculating...</div>
+    </section>
+
+    <section style="margin-top: 2rem;">
+      <h2>🕓 10-Hour Forecast</h2>
+      <canvas id="recChart" height="150"></canvas>
+      <p>Click on a time below to see details:</p>
+      <div id="hourSelect" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
+      <select id="hourDropdown" style="margin-top: 1rem; display: none;"></select>
+
+      <div id="hourDetails">
+        <p><strong id="hourCondition">—</strong></p>
+        <p>🌡️ Temp: <strong id="hourTemp">—</strong>°C</p>
+        <p>🌊 Sea: <strong id="hourSea">—</strong>°C</p>
+        <p>🌊 Waves: <strong id="hourWave">—</strong> m</p>
+        <p>☀️ UV: <strong id="hourUV">—</strong></p>
+        <p>💧 Humidity: <strong id="hourHumidity">—</strong>%</p>
+        <p>💨 Wind: <strong id="hourWind">—</strong> km/h</p>
+        <p>🍃 Air quality (PM 2.5): <strong id="hourAir">—</strong></p>
+        <p>🏄 Recommendation: <strong id="hourScore">—</strong></p>
+      </div>
+    </section>
+
+    <section style="margin-top: 2rem;">
+      <h2>🌊 Tides</h2>
+      <p id="tideSummary">Loading tide data...</p>
+      <canvas id="tideChart" height="100"></canvas>
+      <p><em>The heights are relative to the global avg.</em></p>
+    </section>
+
+    <section style="margin-top: 2rem;">
+      <h2>🌌 Sky</h2>
+      <div id="astro">Calculating...</div>
+    </section>
+
+    <section style="margin-top: 2rem;">
+      <h2>🌅 Upcoming events</h2>
+      <p>Here's what will happen in the coming hours:</p>
+      <section id="upcoming-section" class="card-section"></section>
+    </section>
+
+    <p><small>Powered by <a href="https://open-meteo.com">Open-meteo</a>, <a href="https://github.com/mourner/suncalc">SunCalc.js</a> and <a href="https://www.swpc.noaa.gov/">NOAA SWPC</a>. Forecasts update hourly</small></p>
+  </main>
+
+<script>
+const params = new URLSearchParams(location.search);
+const name = decodeURIComponent(params.get("name") || "Unknown beach");
+const lat = params.get("lat");
+const lng = params.get("lng");
+
+const title = document.getElementById("beachTitle");
+const coords = document.getElementById("coords");
+const mapBtn = document.getElementById("mapBtn");
+const favBtn = document.getElementById("favBtn");
+const recBox = document.getElementById("recContainer");
+const recChart = document.getElementById("recChart");
+const tideChart = document.getElementById("tideChart");
+title.textContent = name;
+coords.textContent = lat && lng ? `📍 ${lat}, ${lng}` : "";
+document.title = `${name} • SeaChill`;
+
+mapBtn.onclick = () => {
+  if (lat && lng) {
+    window.open(`https://www.google.com/maps?q=${lat},${lng}`, "_blank");
+  } else {
+    alert("No coordinates provided");
+  }
+};
+
+const themeMap = {
+  light: "light.css",
+  dark: "dark.css",
+  twilight: "twilight.css",
+  jungle: "jungle.css",
+  breeze: "breeze.css",
+  void: "void.css"
+};
+const currentTheme = localStorage.getItem("preferredTheme") || "light";
+document.getElementById("themeStylesheet").href = themeMap[currentTheme] || themeMap.light;
+
+const preferredTemp = parseFloat(localStorage.getItem("preferredTemp")) || 30;
+const seaTemp = parseFloat(localStorage.getItem("seaTemp")) || 28;
+const tempTolerance = parseFloat(localStorage.getItem("tempTolerance")) || 3;
+
+function getConditionEmoji(code) {
+  if (code >= 95) return "⛈️ Thunderstorm";
+  if (code >= 80) return "🌦 Rain showers";
+  if (code >= 60) return "🌧 Rainy";
+  if (code >= 45) return "🌫️ Foggy";
+  if (code >= 30) return "☁️ Cloudy";
+  if (code >= 1)  return "⛅ A few clouds";
+  return "🌞 Clear sky";
+}
+
+function isFavorited() {
+  const favs = JSON.parse(localStorage.getItem("favoriteBeaches") || "[]");
+  return favs.some(b => b.name === name);
+}
+
+function updateFavButton() {
+  if (isFavorited()) {
+    favBtn.textContent = "💔 Remove from favorites";
+    favBtn.classList.remove("button-accent");
+    favBtn.classList.add("button-default");
+  } else {
+    favBtn.textContent = "💙 Add to favorites";
+    favBtn.classList.remove("button-default");
+    favBtn.classList.add("button-accent");
+  }
+}
+
+favBtn.onclick = () => {
+  const favs = JSON.parse(localStorage.getItem("favoriteBeaches") || "[]");
+  const index = favs.findIndex(b => b.name === name);
+  if (index >= 0) {
+    favs.splice(index, 1);
+    localStorage.setItem("favoriteBeaches", JSON.stringify(favs));
+    alert(`❎ Removed ${name} from favorites.`);
+  } else {
+    const emoji = prompt("Choose an emoji for this beach:", "🌴") || "🌴";
+    favs.push({ name, icon: emoji, lat: lat, lng: lng });
+    localStorage.setItem("favoriteBeaches", JSON.stringify(favs));
+    alert(`✅ Added ${name} to favorites!`);
+  }
+  updateFavButton();
+};
+
+updateFavButton();
+
+function pushNotif(title, body) {
+  if (Notification.permission === "granted") {
+    new Notification(title, { body });
+  } else if (Notification.permission !== "denied") {
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        new Notification(title, { body });
+      }
+    });
+  }
+  else {
+    alert(Notification.permission)
+  }
+}
+
+function alerts(recScore, warnings, code, temp, realSeaTemp) {
+  const alertToggle = document.getElementById("alertToggle");
+  const alertDesc = document.getElementById("alertDesc");
+  let lastTempAlert = null;
+  let lastSeaTempAlert = null;
+  if (localStorage.getItem("alertEnabled") === "false") {
+    document.getElementById("alert-section").innerHTML = "";
+    return;
+  }
+
+  alertToggle.onchange = () => {
+    if (alertToggle.checked) {
+      alertDesc.innerHTML = "<em>You will receive alerts on your smart watch when the weather changes. Don't close this tab!</em>";
+      pushNotif("⛱ Welcome to alerts!", "Alerts are fun :)")
+    } else {
+      alertDesc.innerHTML = "<em>Alerts disabled. You won't get notifications.</em>";
+    }
+  if (alertToggle.checked) {
+    
+    // Warnings
+    if (warnings.length > 0) {
+      warnings.forEach(warning => {
+          if (warning.variant === "critical") {
+          pushNotif(`🚨 Severe Weather Alert`, `${warning.title} at ${formatTime(new Date(warning.time))}: ${warning.detail}`);
+          } else if (warning.variant === "warning" && localStorage.getItem("alertWarnings") === "always") {
+          pushNotif(`⚠️ Weather Alert`, `${warning.title} at ${formatTime(new Date(warning.time))}: ${warning.detail}`);
+          }
+        }
+      );
+    }
+
+    // Temps
+    if (localStorage.getItem("alertTemp") === "not-fav") {
+      if (
+        lastTempAlert === null ||
+        Math.abs(temp - lastTempAlert) > tempTolerance
+      ) {
+        if (temp < preferredTemp - tempTolerance) {
+          pushNotif("❄️ Temperature Alert", `It's getting cooler! Current temp: ${temp}°C`);
+          lastTempAlert = temp;
+        } else if (temp > preferredTemp + tempTolerance) {
+          pushNotif("🔥 Temperature Alert", `It's getting warmer! Current temp: ${temp}°C`);
+          lastTempAlert = temp;
+        }
+      }
+    }
+
+    // Sea temps
+    if ((
+      lastSeaTempAlert === null ||
+      Math.abs(seaTemp - lastSeaTempAlert) > seaTempTolerance) &&
+      localStorage.getItem("alertSeaTemp") === "not-fav"
+    ) {
+      if (realSeaTemp < seaTemp - tempTolerance) {
+        pushNotif("❄️ Sea Temperature Alert", `The sea is getting cooler! Current sea temp: ${seaTemp}°C`);
+        lastSeaTempAlert = seaTemp;
+      } else if (realSeaTemp > seaTemp + tempTolerance) {
+        pushNotif("🔥 Sea Temperature Alert", `The sea is getting warmer! Current sea temp: ${seaTemp}°C`);
+        lastSeaTempAlert = seaTemp;
+      }
+    }
+
+    // Rec score
+    if (recScore >= 9 && localStorage.getItem("alertBeachCall") === "score-perfect") {
+      pushNotif("🌴 Recommendation", `The beach's weather should be nice for you. The score is ${recScore}`);
+    } else if (recScore >= 7 && localStorage.getItem("alertBeachCall") === "score-good") {
+      pushNotif("🌴 Recommendation", `The beach's weather should be nice for you. The score is ${recScore}.`);
+    } else if (recScore >= 4 && localStorage.getItem("alertBeachCall") === "score-ok") {
+      pushNotif("🌴 Recommendation", `The beach's weather should be nice for you. The score is ${recScore}.`);
+    }
+
+    // Rain
+    if (code >= 60 && localStorage.getItem()) {
+      pushNotif("🌧 Rain", "Rain is expected very very very soon!")
+    }
+    }
+  };
+}
+
+function formatTime(date) {
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function computeScore(temp, sea, wind, humidity, uv, wave, code = 0, pm25 = 0) {
+  function toleranceScore(actual, target) {
+    const diff = Math.abs(actual - target);
+    return diff <= tempTolerance ? 10 : Math.max(0, 10 - (diff - tempTolerance));
+  }
+
+  const airScore = toleranceScore(temp, preferredTemp);
+  const seaScore = toleranceScore(sea, seaTemp);
+
+  const windPenalty = wind > 50 ? 5 : wind > 30 ? 2 : wind > 20 ? 1 : 0;
+  const humidityPenalty = humidity > 80 ? 1 : 0;
+  const uvPenalty = uv > 8 ? 2 : uv > 6 ? 1 : 0;
+  const wavePenalty = wave > 2 ? 2 : wave > 1.5 ? 1 : 0;
+  const conditionPenalty = code >= 95 ? 5 : code >= 80 ? 3 : code >= 60 ? 1 : 0;
+
+  // New: PM2.5 Penalty (based on simplified US AQI breakpoints)
+  const pm25Penalty =
+    pm25 <= 12 ? 0 :
+    pm25 <= 35.4 ? 1 :
+    pm25 <= 55.4 ? 2 :
+    pm25 <= 150 ? 3 :
+    pm25 <= 250 ? 4 : 5;
+
+  const total = (airScore + seaScore) / 2 -
+    windPenalty - humidityPenalty - uvPenalty -
+    wavePenalty - conditionPenalty - pm25Penalty;
+
+  return {
+    total: Math.max(0, Math.min(10, total)),
+    breakdown: {
+      airScore, seaScore,
+      windPenalty, humidityPenalty, uvPenalty,
+      wavePenalty, conditionPenalty, pm25Penalty
+    }
+  };
+}
+
+function setupHourlySelector(data) {
+  const hourSelect = document.getElementById("hourSelect");
+  const hourDropdown = document.getElementById("hourDropdown");
+
+  function renderCards() {
+    hourSelect.innerHTML = "";
+    data.forEach((entry, i) => {
+      const btn = document.createElement("button");
+      btn.textContent = `${entry.hour}:00`;
+      btn.className = "theme-card";
+      btn.onclick = () => updateHourDetails(i);
+      hourSelect.appendChild(btn);
+    });
+    updateHourDetails(0);
+    hourSelect.children[0].classList.add("selected");
+  }
+
+  function renderDropdown() {
+    hourDropdown.innerHTML = "";
+    data.forEach((entry, i) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = `${entry.hour}:00`;
+      hourDropdown.appendChild(opt);
+    });
+    hourDropdown.onchange = () => updateHourDetails(hourDropdown.value);
+  }
+
+  function updateHourDetails(i) {
+    const entry = data[i];
+    const { total } = computeScore(entry.temp, entry.sea, entry.wind, entry.humidity, entry.uv, entry.wave, entry.code);
+    document.getElementById("hourCondition").textContent = getConditionEmoji(entry.code);
+    document.getElementById("hourTemp").textContent = entry.temp;
+    document.getElementById("hourSea").textContent = entry.sea;
+    document.getElementById("hourWave").textContent = entry.wave.toFixed(1);
+    document.getElementById("hourHumidity").textContent = entry.humidity;
+    document.getElementById("hourUV").textContent = entry.uv;
+    document.getElementById("hourWind").textContent = entry.wind.toFixed(1);
+    document.getElementById("hourAir").textContent = entry.pm25.toFixed(1);
+    document.getElementById("hourScore").textContent = `${total.toFixed(1)} / 10`;
+
+    [...hourSelect.children].forEach(btn => btn.classList.remove("selected"));
+    if (hourSelect.children[i]) hourSelect.children[i].classList.add("selected");
+  }
+
+  function toggleLayout() {
+    const isCompact = window.innerWidth < 600;
+    hourSelect.style.display = isCompact ? "none" : "flex";
+    hourDropdown.style.display = isCompact ? "block" : "none";
+  }
+
+  renderCards();
+  renderDropdown();
+  toggleLayout();
+  window.addEventListener("resize", toggleLayout);
+}
+
+async function isHighTide(timestamp) {
+  console.log("🌊 Checking High Tide at:", new Date(timestamp));
+
+  const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&hourly=sea_level_height_msl&timezone=auto`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  const times = data.hourly.time;
+  const heights = data.hourly.sea_level_height_msl.map(Number);
+  const targetTime = new Date(timestamp).getTime();
+
+  // 🔍 Find closest index
+  let idx = 0, minDiff = Infinity;
+  for (let i = 0; i < times.length; i++) {
+    const t = new Date(times[i]).getTime();
+    const diff = Math.abs(t - targetTime);
+    if (diff < minDiff) {
+      minDiff = diff;
+      idx = i;
+    }
+  }
+
+  console.log("🕒 Closest index:", idx, "| Time:", times[idx], "| Height:", heights[idx]);
+
+  if (idx >= 3 && idx <= heights.length - 4) {
+    const current = heights[idx];
+    const neighbors = [
+      heights[idx - 3],
+      heights[idx - 2],
+      heights[idx - 1],
+      heights[idx + 1],
+      heights[idx + 2],
+      heights[idx + 3]
+    ];
+    const avg = neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
+    const diff = current - avg;
+    const isHighest = neighbors.every(n => current > n);
+    const isSignificant = diff > 0.05;
+
+    console.log("📏 Neighbors:", neighbors);
+    console.log("📈 Is peak over all neighbors?", isHighest);
+    console.log("↕️ Diff from avg:", diff.toFixed(3));
+    console.log("📏 Is diff > 0.05?", isSignificant);
+
+    return isHighest && isSignificant;
+  }
+
+  console.log("⚠️ Not enough data before/after for detection");
+  return false;
+}
+
+async function isLowTide(timestamp) {
+  console.log("🌊 Checking Low Tide at:", new Date(timestamp));
+
+  const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&hourly=sea_level_height_msl&timezone=auto`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  const times = data.hourly.time;
+  const heights = data.hourly.sea_level_height_msl.map(Number);
+  const targetTime = new Date(timestamp).getTime();
+
+  // 🔍 Find closest index
+  let idx = 0, minDiff = Infinity;
+  for (let i = 0; i < times.length; i++) {
+    const t = new Date(times[i]).getTime();
+    const diff = Math.abs(t - targetTime);
+    if (diff < minDiff) {
+      minDiff = diff;
+      idx = i;
+    }
+  }
+
+  console.log("🕒 Closest index:", idx, "| Time:", times[idx], "| Height:", heights[idx]);
+
+  if (idx >= 3 && idx <= heights.length - 4) {
+    const current = heights[idx];
+    const neighbors = [
+      heights[idx - 3],
+      heights[idx - 2],
+      heights[idx - 1],
+      heights[idx + 1],
+      heights[idx + 2],
+      heights[idx + 3]
+    ];
+    const avg = neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
+    const diff = avg - current;
+    const isLowest = neighbors.every(n => current < n);
+    const isSignificant = diff > 0.05;
+
+    console.log("📏 Neighbors:", neighbors);
+    console.log("📉 Is current < all neighbors?", isLowest);
+    console.log("↕️ Avg - Current:", diff.toFixed(3));
+    console.log("📏 Is diff > 0.05?", isSignificant);
+
+    return isLowest && isSignificant;
+  }
+
+  console.log("⚠️ Not enough data before/after for detection");
+  return false;
+}
+
+async function sunMoon() {
+  const spaceBox = document.getElementById("astro");
+  if (!lat || !lng) {
+    space.textContent = "No coordinates provided";
+    return;
+  };
+
+  const now = new Date();
+  const sunTimes = SunCalc.getTimes(now, lat, lng);
+  const moonTimes = SunCalc.getMoonTimes(now, lat, lng);
+  const moonData = SunCalc.getMoonIllumination(now);
+  const sunRise = formatTime(sunTimes.sunrise);
+  const sunSet = formatTime(sunTimes.sunset);
+  const moonRise = formatTime(moonTimes.rise);
+  const moonSet = formatTime(moonTimes.set);
+  const goldenHour = formatTime(sunTimes.goldenHour);
+  const moonPhase = moonData.phase <= 0.25 ? "🌑"
+    : moonData.phase <= 0.5 ? "🌓"
+    : moonData.phase <= 0.75 ? "🌕"
+    : moonData.phase <= 1 ? "🌗"
+    : "🌙";
+
+  spaceBox.innerHTML = `
+    <p>🌞 ↑ <strong>${sunRise}</strong>   ↓ <strong>${sunSet}</strong></p>
+    <p>${moonPhase} ↑ <strong>${moonRise}</strong>   ↓ <strong>${moonSet}</strong></p>
+    <p>Golden hour: <strong>${goldenHour}</strong></p>
+  `;
+}
+
+async function checkAuroraChance() {
+  const res = await fetch("https://services.swpc.noaa.gov/json/ovation_aurora_latest.json");
+  const data = await res.json();
+
+  let closest = null;
+  let minDist = Infinity;
+
+  for (const point of data.coordinates) {
+    const [pLon, pLat, probability] = point;
+    const dist = Math.hypot(pLat - lat, pLon - lng);
+    if (dist < minDist) {
+      minDist = dist;
+      closest = { lat: pLat, lon: pLon, probability };
+    }
+  }
+  if (!closest) {
+    console.log("No aurora data available");
+    return false;
+  }
+  console.log("🌌 Closest aurora point:", closest);
+  return closest.probability; // tweak threshold as needed
+}
+
+function generateUpcomingCards(events) {
+  const container = document.getElementById("upcoming-section");
+  if (!container || !Array.isArray(events)) return;
+
+  container.innerHTML = ""; // Clear old cards
+
+  events.forEach(event => {
+    const card = document.createElement("div");
+    if (event.variant !== "normal") {
+      card.className = `card ${event.variant || ""}`;
+    } else {
+      card.className = "card";
+    }
+
+    const time = document.createElement("div");
+    time.innerHTML = `<small>${event.time || "Soon"}</small>`;
+
+    const title = document.createElement("div");
+    title.innerHTML = `<h1>${event.title || "No title"}</h1>`;
+
+    const detail = document.createElement("div");
+    detail.innerHTML = `${event.detail || ""}`;
+
+    card.appendChild(time);
+    card.appendChild(title);
+    card.appendChild(detail);
+
+    if (event.link) {
+      const link = document.createElement("a");
+      link.href = event.link;
+      link.target = "_blank";
+      link.className = "event-link";
+      link.textContent = event.linkText || "Show chart →";
+      card.appendChild(link);
+    }
+
+    container.appendChild(card);
+  });
+}
+
+function generateWarnings(warnings) {
+  const warningsContainer = document.getElementById("warnings-here");
+  if (!warningsContainer) return;
+
+  warningsContainer.innerHTML = ""; // Clear old warnings
+
+  if (warnings.length === 0) {
+    warningsContainer.textContent = "🍸 There are no warnings right now";
+    return;
+  }
+
+  warnings.forEach(warning => {
+    const warningDiv = document.createElement("div");
+    warningDiv.className = `card ${warning.variant || ""}`;
+    warningDiv.innerHTML = `
+      <h1>${warning.title}</h1>
+      <p>${warning.detail}</p>
+      <small>${warning.time}</small>
+    `;
+    warningsContainer.appendChild(warningDiv);
+  });
+}
+
+async function getCurrentWarnings(weatherApiURL, marineAPIurl, airApiURL) {
+  // Fetch weather and marine data
+  try {
+    const [weatherRes, marineRes, airRes] = await Promise.all([
+      fetch(weatherApiURL),
+      fetch(marineAPIurl),
+      fetch(airApiURL)
+    ]);
+    const [weather, marine, air] = await Promise.all([
+      weatherRes.json(),
+      marineRes.json(),
+      airRes.json()
+    ]);
+
+    // Get current hour index
+    const now = new Date();
+    const weatherTimes = weather.hourly.time.map(t => new Date(t));
+    let currentIdx = weatherTimes.findIndex(dt =>
+      dt.getHours() === now.getHours() &&
+      dt.getDate() === now.getDate() &&
+      dt.getMonth() === now.getMonth() &&
+      dt.getFullYear() === now.getFullYear()
+    );
+    if (currentIdx === -1) currentIdx = 0;
+
+    // Helper to find how long the warning will last (in hours)
+    function getWarningDuration(predicate) {
+      let endIdx = currentIdx;
+      while (
+        endIdx < weather.hourly.time.length &&
+        predicate(endIdx)
+      ) {
+        endIdx++;
+      }
+      return endIdx - currentIdx;
+    }
+
+    const warnings = [];
+
+    // --- Storm Warning (60 <= code < 80) ---
+    if (weather.hourly.weather_code?.[currentIdx] >= 60 && weather.hourly.weather_code?.[currentIdx] < 80) {
+      const duration = getWarningDuration(i =>
+      weather.hourly.weather_code?.[i] >= 60 && weather.hourly.weather_code?.[i] < 80
+      );
+      warnings.push({
+      variant: "warning",
+      title: "⚠️ Warning: Stormy weather",
+      detail: `Weather code ${weather.hourly.weather_code?.[currentIdx]} — possible showers or thunder`,
+      time: `${duration}h left - until ${weather.hourly.time[currentIdx + duration] !== undefined ? new Date(weather.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+    // --- Critical Storm Warning (code >= 80) ---
+    if (weather.hourly.weather_code?.[currentIdx] >= 80) {
+      const duration = getWarningDuration(i =>
+      weather.hourly.weather_code?.[i] >= 80
+      );
+      warnings.push({
+      variant: "critical",
+      title: "🚨 Severe warning: Stormy weather",
+      detail: `Thunderstorms likely (code ${weather.hourly.weather_code?.[currentIdx]}) — avoid open beaches`,
+      time: `${duration}h left - until ${weather.hourly.time[currentIdx + duration] !== undefined ? new Date(weather.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+    // --- Wind warning (30 <= wind < 50) ---
+    if (weather.hourly.windspeed_10m?.[currentIdx] >= 30 && weather.hourly.windspeed_10m?.[currentIdx] < 50) {
+      const duration = getWarningDuration(i =>
+      weather.hourly.windspeed_10m?.[i] >= 30 && weather.hourly.windspeed_10m?.[i] < 50
+      );
+      warnings.push({
+      variant: "warning",
+      title: "⚠️ Warning: Strong winds",
+      detail: `Winds reaching ${weather.hourly.windspeed_10m?.[currentIdx]} km/h — may not be the most comfortable`,
+      time: `${duration}h left - until ${weather.hourly.time[currentIdx + duration] !== undefined ? new Date(weather.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+    // --- Critical wind warning (wind >= 50) ---
+    if (weather.hourly.windspeed_10m?.[currentIdx] >= 50) {
+      const duration = getWarningDuration(i =>
+      weather.hourly.windspeed_10m?.[i] >= 50
+      );
+      warnings.push({
+      variant: "critical",
+      title: "🚨 Severe warning: Very strong winds",
+      detail: `Winds above ${weather.hourly.windspeed_10m?.[currentIdx]} km/h — not safe for beach and sea fun`,
+      time: `${duration}h left - until ${weather.hourly.time[currentIdx + duration] !== undefined ? new Date(weather.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+    // --- Heat Warning (33 <= temp < 38) ---
+    if (weather.hourly.temperature_2m?.[currentIdx] >= 33 && weather.hourly.temperature_2m?.[currentIdx] < 38) {
+      const duration = getWarningDuration(i =>
+      weather.hourly.temperature_2m?.[i] >= 33 && weather.hourly.temperature_2m?.[i] < 38
+      );
+      warnings.push({
+      variant: "warning",
+      title: "⚠️ Warning: Hot",
+      detail: `Air temperature reaching ${weather.hourly.temperature_2m?.[currentIdx]} °C — stay hydrated`,
+      time: `${duration}h left - until ${weather.hourly.time[currentIdx + duration] !== undefined ? new Date(weather.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+    // --- Critical Heat Warning (temp >= 38) ---
+    if (weather.hourly.temperature_2m?.[currentIdx] >= 38) {
+      const duration = getWarningDuration(i =>
+      weather.hourly.temperature_2m?.[i] >= 38
+      );
+      warnings.push({
+      variant: "critical",
+      title: "🚨 Severe warning: Hot",
+      detail: `Very high temps (${weather.hourly.temperature_2m?.[currentIdx]} °C) — heatstroke risk`,
+      time: `${duration}h left - until ${weather.hourly.time[currentIdx + duration] !== undefined ? new Date(weather.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+    // --- Cold warning (temp < 10) ---
+    if (weather.hourly.temperature_2m?.[currentIdx] < 10) {
+      const duration = getWarningDuration(i =>
+      weather.hourly.temperature_2m?.[i] < 10
+      );
+      warnings.push({
+      variant: "warning",
+      title: "⚠️ Warning: Cold",
+      detail: `Air temperature dropping to ${weather.hourly.temperature_2m?.[currentIdx]} °C — dress warmly!`,
+      time: `${duration}h left - until ${weather.hourly.time[currentIdx + duration] !== undefined ? new Date(weather.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+    // --- Critical Cold Warning (temp < 5) ---
+    if (weather.hourly.temperature_2m?.[currentIdx] < 5) {
+      const duration = getWarningDuration(i =>
+      weather.hourly.temperature_2m?.[i] < 5
+      );
+      warnings.push({
+      variant: "critical",
+      title: "🚨 Severe warning: Cold",
+      detail: `Very low temps (${weather.hourly.temperature_2m?.[currentIdx]} °C) — frostbite risk`,
+      time: `${duration}h left - until ${weather.hourly.time[currentIdx + duration] !== undefined ? new Date(weather.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+    // --- Air Quality Warning (pm2.5 > 55.4) ---
+    if (air.hourly.pm2_5?.[currentIdx] > 55.4 && air.hourly.pm2_5?.[currentIdx] <= 150.4) {
+      const duration = getWarningDuration(i =>
+        air.hourly.pm2_5?.[i] > 55.4 && air.hourly.pm2_5?.[i] <= 150.4
+      );
+      warnings.push({
+        variant: "warning",
+        title: "⚠️ Warning: Bad air quality",
+        detail: `PM2.5 level ${air.hourly.pm2_5?.[currentIdx]} µg/m³ — sensitive groups should limit exposure`,
+        time: `${duration}h left - until ${air.hourly.time[currentIdx + duration] !== undefined ? new Date(air.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+    // --- Severe Air Quality Warning (pm2.5 > 150.4) ---
+    if (air.hourly.pm2_5?.[currentIdx] > 150.4) {
+      const duration = getWarningDuration(i =>
+        air.hourly.pm2_5?.[i] > 150.4
+      );
+      warnings.push({
+        variant: "critical",
+        title: "🚨 Severe warning: Very bad air quality",
+        detail: `Hazardous PM2.5 level (${air.hourly.pm2_5?.[currentIdx]} µg/m³) — avoid outdoor activity`,
+        time: `${duration}h left - until ${air.hourly.time[currentIdx + duration] !== undefined ? new Date(air.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+    // --- UV warning (8 <= uv < 11) ---
+    if (weather.hourly.uv_index?.[currentIdx] >= 8 && weather.hourly.uv_index?.[currentIdx] < 11) {
+      const duration = getWarningDuration(i =>
+      weather.hourly.uv_index?.[i] >= 8 && weather.hourly.uv_index?.[i] < 11
+      );
+      warnings.push({
+      variant: "warning",
+      title: "⚠️ Warning: High UV",
+      detail: `UV index rising to ${weather.hourly.uv_index?.[currentIdx]} — seek shade`,
+      time: `${duration}h left - until ${weather.hourly.time[currentIdx + duration] !== undefined ? new Date(weather.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+    // --- Critical UV Warning (uv >= 11) ---
+    if (weather.hourly.uv_index?.[currentIdx] >= 11) {
+      const duration = getWarningDuration(i =>
+      weather.hourly.uv_index?.[i] >= 11
+      );
+      warnings.push({
+      variant: "critical",
+      title: "🚨 Severe warning: Very high UV",
+      detail: `UV index reaching ${weather.hourly.uv_index?.[currentIdx]} — avoid direct sun`,
+      time: `${duration}h left - until ${weather.hourly.time[currentIdx + duration] !== undefined ? new Date(weather.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+    // --- Wave height warning (2 <= wave < 3) ---
+    if (marine.hourly.wave_height?.[currentIdx] >= 2 && marine.hourly.wave_height?.[currentIdx] < 3) {
+      const duration = getWarningDuration(i =>
+      marine.hourly.wave_height?.[i] >= 2 && marine.hourly.wave_height?.[i] < 3
+      );
+      warnings.push({
+      variant: "warning",
+      title: "⚠️ Warning: High waves",
+      detail: `Wave height reaching ${marine.hourly.wave_height?.[currentIdx].toFixed(1)} m — be careful`,
+      time: `${duration}h left - until ${weather.hourly.time[currentIdx + duration] !== undefined ? new Date(weather.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+    // --- Critical Wave Warning (wave >= 3) ---
+    if (marine.hourly.wave_height?.[currentIdx] >= 3) {
+      const duration = getWarningDuration(i =>
+      marine.hourly.wave_height?.[i] >= 3
+      );
+      warnings.push({
+      variant: "critical",
+      title: "🚨 Severe warning: Very high waves",
+      detail: `Wave height above ${marine.hourly.wave_height?.[currentIdx].toFixed(1)} m — dangerous waves, don't swim!`,
+      time: `${duration}h left - until ${weather.hourly.time[currentIdx + duration] !== undefined ? new Date(weather.hourly.time[currentIdx + duration]).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "???"}`
+      });
+    }
+
+    console.log(`Date + 10 hours: ${weather.hourly.time[currentIdx + 10]}`); // Debugging line
+
+    return warnings;
+  } catch (e) {
+    console.error("Failed to get current warnings:", e);
+    return [];
+  }
+}
+
+async function generateEvents(weatherApiURL, marineApiURL, airURL) {
+  try {
+    const [weatherRes, marineRes, airRes] = await Promise.all([
+      fetch(weatherApiURL),
+      fetch(marineApiURL),
+      fetch(airURL)
+    ]);
+
+    const [weather, marine, air] = await Promise.all([
+      weatherRes.json(),
+      marineRes.json(),
+      airRes.json()
+    ]);
+
+    const events = [];
+    const hours = weather.hourly.time.length;
+
+    // Track active warnings to only show once, and show improvement when they end
+    const warningState = {
+      storm: false,
+      stormCritical: false,
+      wind: false,
+      windCritical: false,
+      heat: false,
+      heatCritical: false,
+      cold: false,
+      coldCritical: false,
+      uv: false,
+      uvCritical: false,
+      wave: false,
+      waveCritical: false,
+      air: false,
+      airCritical: false
+    };
+
+    for (let i = 0; i < hours; i++) {
+      const rawTime = weather.hourly.time[i];
+      const dt = new Date(rawTime);
+      const time = `${dt.getDate()}.${dt.getMonth() + 1}.${dt.getFullYear()} - ${dt.getHours()}:${dt.getMinutes().toString().padStart(2, "0")}`;
+      const temp = weather.hourly.temperature_2m?.[i];
+      const humidity = weather.hourly.relative_humidity_2m?.[i];
+      const uv = weather.hourly.uv_index?.[i];
+      const wind = weather.hourly.windspeed_10m?.[i];
+      const code = weather.hourly.weather_code?.[i];
+      const wave = marine.hourly.wave_height?.[i];
+      const sea = marine.hourly.sea_surface_temperature?.[i];
+      const pm25 = air.hourly.pm2_5[i]
+      const { total: score } = computeScore(temp, sea, wind, humidity, uv, wave, code);
+
+      // --- Storm Warning (60 <= code < 80) ---
+      if (code >= 60 && code < 80) {
+        if (!warningState.storm) {
+          events.push({
+            time,
+            variant: "warning",
+            title: "⚠️ Warning: Stormy weather",
+            detail: `Weather code ${code} — possible showers or thunder`
+          });
+          warningState.storm = true;
+        }
+      } else if (warningState.storm) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 Stormy weather warning ended",
+          detail: "The storm has passed"
+        });
+        warningState.storm = false;
+      }
+
+      // --- Critical Storm Warning (code >= 80) ---
+      if (code >= 80) {
+        if (!warningState.stormCritical) {
+          events.push({
+            time,
+            variant: "critical",
+            title: "🚨 Severe warning: Stormy weather",
+            detail: `Thunderstorms likely (code ${code}) — avoid open beaches`
+          });
+          warningState.stormCritical = true;
+        }
+      } else if (warningState.stormCritical) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 Severe stormy weather warning ended",
+          detail: "Big storms have passed"
+        });
+        warningState.stormCritical = false;
+      }
+
+      // --- Wind warning (30 <= wind < 50) ---
+      if (wind >= 30 && wind < 50) {
+        if (!warningState.wind) {
+          events.push({
+            time,
+            variant: "warning",
+            title: "⚠️ Warning: Strong winds",
+            detail: `Winds reaching ${wind} km/h — may not be the most comfortable`
+          });
+          warningState.wind = true;
+        }
+      } else if (warningState.wind) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 Strong wind warning ended",
+          detail: "Winds are calming down"
+        });
+        warningState.wind = false;
+      }
+
+      // --- Critical wind warning (wind >= 50) ---
+      if (wind >= 50) {
+        if (!warningState.windCritical) {
+          events.push({
+            time,
+            variant: "critical",
+            title: "🚨 Severe warning: Very strong winds",
+            detail: `Winds above ${wind} km/h — not safe for beach and sea fun`
+          });
+          warningState.windCritical = true;
+        }
+      } else if (warningState.windCritical) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 Severe strong wind warning ended",
+          detail: "Winds are calming down"
+        });
+        warningState.windCritical = false;
+      }
+
+      // --- Heat Warning (33 <= temp < 38) ---
+      if (temp >= 33 && temp < 38) {
+        if (!warningState.heat) {
+          events.push({
+            time,
+            variant: "warning",
+            title: "⚠️ Warning: Hot",
+            detail: `Air temperature reaching ${temp} °C — stay hydrated`
+          });
+          warningState.heat = true;
+        }
+      } else if (warningState.heat) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 Heat warning ended",
+          detail: "Air temperature returning to normal"
+        });
+        warningState.heat = false;
+      }
+
+      // --- Critical Heat Warning (temp >= 38) ---
+      if (temp >= 38) {
+        if (!warningState.heatCritical) {
+          events.push({
+            time,
+            variant: "critical",
+            title: "🚨 Severe warning: Very hot",
+            detail: `Very high temps (${temp} °C) — heatstroke risk`
+          });
+          warningState.heatCritical = true;
+        }
+      } else if (warningState.heatCritical) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 Severe heat warning ended",
+          detail: "Extreme heat has subsided"
+        });
+        warningState.heatCritical = false;
+      }
+
+      // --- Cold warning (temp < 10) ---
+      if (temp < 10) {
+        if (!warningState.cold) {
+          events.push({
+            time,
+            variant: "warning",
+            title: "⚠️ Warning: Cold",
+            detail: `Air temperature dropping to ${temp} °C — dress warmly!`
+          });
+          warningState.cold = true;
+        }
+      } else if (warningState.cold) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 Cold warning ended",
+          detail: "It's getting warmer!"
+        });
+        warningState.cold = false;
+      }
+
+      // --- Critical Cold Warning (temp < 5) ---
+      if (temp < 5) {
+        if (!warningState.coldCritical) {
+          events.push({
+            time,
+            variant: "critical",
+            title: "🚨 Severe warning: Very cold",
+            detail: `Very low temps (${temp} °C) — frostbite risk`
+          });
+          warningState.coldCritical = true;
+        }
+      } else if (warningState.coldCritical) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 Severe cold warning ended",
+          detail: "Extreme cold is gone!"
+        });
+        warningState.coldCritical = false;
+      }
+
+      // --- Air Quality Warning (pm2.5 > 55.4) ---
+      if (pm25 > 55.4) {
+        if (!warningState.air) {
+          events.push({
+            time,
+            variant: "warning",
+            title: "⚠️ Warning: Bad air quality",
+            detail: `PM2.5 levels reaching ${pm25} µg/m³ — sensitive groups should limit exposure`
+          });
+          warningState.air = true;
+        }
+      } else if (warningState.air) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 Bad air quality warning ended",
+          detail: "Conditions have improved — fresher air ahead!"
+        });
+        warningState.air = false;
+      }
+
+      // --- Severe Air Quality Warning (pm2.5 > 150.4) ---
+      if (pm25 > 150.4) {
+        if (!warningState.airCritical) {
+          events.push({
+            time,
+            variant: "critical",
+            title: "🚨 Severe warning: Very bad air quality",
+            detail: `Hazardous PM2.5 concentration (${pm25} µg/m³) — avoid outdoor activities`
+          });
+          warningState.airCritical = true;
+        }
+      } else if (warningState.airCritical) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 Severe bad air quality warning ended",
+          detail: "Hazardous levels have dropped — breathe easier!"
+        });
+        warningState.airCritical = false;
+      }
+
+      // --- UV warning (8 <= uv < 11) ---
+      if (uv >= 8 && uv < 11) {
+        if (!warningState.uv) {
+          events.push({
+            time,
+            variant: "warning",
+            title: "⚠️ Warning: High UV",
+            detail: `UV index rising to ${uv} — seek shade`
+          });
+          warningState.uv = true;
+        }
+      } else if (warningState.uv) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 UV warning ended",
+          detail: "UV index returning to safer levels"
+        });
+        warningState.uv = false;
+      }
+
+      // --- Critical UV Warning (uv >= 11) ---
+      if (uv >= 11) {
+        if (!warningState.uvCritical) {
+          events.push({
+            time,
+            variant: "critical",
+            title: "🚨 Severe warning: Very high UV",
+            detail: `UV index reaching ${uv} — avoid direct sun`
+          });
+          warningState.uvCritical = true;
+        }
+      } else if (warningState.uvCritical) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 Severe UV warning ended",
+          detail: "Extreme UV levels are gone"
+        });
+        warningState.uvCritical = false;
+      }
+
+      // --- Wave height warning (2 <= wave < 3) ---
+      if (wave >= 2 && wave < 3) {
+        if (!warningState.wave) {
+          events.push({
+            time,
+            variant: "warning",
+            title: "⚠️ Warning: High waves",
+            detail: `Wave height reaching ${wave.toFixed(1)}m — be careful`
+          });
+          warningState.wave = true;
+        }
+      } else if (warningState.wave) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 Wave warning ended",
+          detail: "Waves are getting calmer"
+        });
+        warningState.wave = false;
+      }
+
+      // --- Critical Wave Warning (wave >= 3) ---
+      if (wave >= 3) {
+        if (!warningState.waveCritical) {
+          events.push({
+            time,
+            variant: "critical",
+            title: "🚨 Severe warning: Very high waves",
+            detail: `Wave height above ${wave.toFixed(1)}m — dangerous waves, don't swim!`
+          });
+          warningState.waveCritical = true;
+        }
+      } else if (warningState.waveCritical) {
+        events.push({
+          time,
+          variant: "improvement",
+          title: "🍃 Severe wave warning ended",
+          detail: "Extreme waves have calmed down"
+        });
+        warningState.waveCritical = false;
+      }
+
+      // 🌊 Tide Update
+      if (await isHighTide(dt.getTime())) {
+        events.push({
+          time,
+          variant: "normal",
+          title: "🌊 High tide",
+          detail: "High tide incoming! Watch out for rising water levels"
+        });
+      } else if (await isLowTide(dt.getTime())) {
+        events.push({
+          time,
+          variant: "normal",
+          title: "🌊 Low tide",
+          detail: "Low tide incoming!"
+        });
+      }
+
+      // 🌤️ Regular Forecast Update
+      if ((dt.getHours() - 3) % 6 === 0 && score !== undefined) {
+        events.push({
+          time,
+          variant: "normal",
+          title: "⛅ Forecast snapshot",
+          detail: `Score: ${score.toFixed(1)}, Wind: ${wind}km/h, Temp: ${temp}°C`
+        });
+      }
+
+      // 🏄 Recommendation changes
+      // Compare with previous hour's score (not persistent across days)
+      if (i > 0) {
+        const prevTemp = weather.hourly.temperature_2m?.[i - 1];
+        const prevHumidity = weather.hourly.relative_humidity_2m?.[i - 1];
+        const prevUv = weather.hourly.uv_index?.[i - 1];
+        const prevWind = weather.hourly.windspeed_10m?.[i - 1];
+        const prevSea = marine.hourly.sea_surface_temperature?.[i - 1];
+        const prevWave = marine.hourly.wave_height?.[i - 1];
+        const prevCode = weather.hourly.weather_code?.[i - 1];
+        const { total: prevScore } = computeScore(prevTemp, prevSea, prevWind, prevHumidity, prevUv, prevWave, prevCode);
+
+        // From below 7 to Good (7-8.99)
+        if (prevScore < 7 && score >= 7 && score < 9) {
+          events.push({
+        time,
+        variant: "improvement",
+        title: "🌿 Good conditions ahead",
+        detail: `Recommendation score improved to ${score.toFixed(1)} / 10`
+          });
+        }
+        // From below 9 to Perfect (9+)
+        if (prevScore < 9 && score >= 9) {
+          events.push({
+        time,
+        variant: "improvement",
+        title: "🌊 Perfect beach weather!",
+        detail: `Score reached ${score.toFixed(1)} / 10 — ideal for swimming`
+          });
+        }
+        // From Good/Perfect to below Good (<7)
+        if (prevScore >= 7 && score < 7) {
+          events.push({
+        time,
+        variant: "normal",
+        title: "⚡ Conditions worsening",
+        detail: `Score dropped to ${score.toFixed(1)} / 10`
+          });
+        }
+        // From Perfect to Good (drops below 9 but still >=7)
+        if (prevScore >= 9 && score < 9 && score >= 7) {
+          events.push({
+        time,
+        variant: "normal",
+        title: "🌿 No longer perfect :(",
+        detail: `Score dropped to ${score.toFixed(1)} / 10`
+          });
+        }
+      }
+
+      generateEvents.prevScore = score;
+      // 🌀 Eclipses
+      const eclipseDates = [
+        // Format: "YYYY-MM-DD"
+        "2024-03-25", // partial lunar
+        "2024-04-08", // total solar
+        "2024-09-18", // partial lunar
+        "2024-10-02", // partial solar
+        "2025-03-14", // total lunar
+        "2025-09-07", // total lunar
+        "2026-02-17", // partial solar
+        "2026-03-03", // partial lunar
+        "2026-08-12", // total solar
+        "2026-08-28", // partial lunar
+        "2027-02-20", // partial lunar
+        "2027-08-02", // total solar
+        "2027-08-17", // partial lunar
+        "2028-01-12", // partial lunar
+        "2028-07-06", // partial lunar
+        "2028-07-22", // total solar
+        "2028-12-31", // partial lunar
+        "2029-06-26", // partial lunar
+        "2029-07-22", // total solar
+        "2029-12-20", // partial lunar
+        "2030-06-01", // partial solar
+        "2030-06-15", // partial lunar
+        "2030-11-25"  // partial lunar
+      ];
+      const eclipseTypes = {
+        "2024-03-25": "partial lunar eclipse",
+        "2024-04-08": "total solar eclipse",
+        "2024-09-18": "partial lunar eclipse",
+        "2024-10-02": "partial solar eclipse",
+        "2025-03-14": "total lunar eclipse",
+        "2025-09-07": "total lunar eclipse",
+        "2026-02-17": "partial solar eclipse",
+        "2026-03-03": "partial lunar eclipse",
+        "2026-08-12": "total solar eclipse",
+        "2026-08-28": "partial lunar eclipse",
+        "2027-02-20": "partial lunar eclipse",
+        "2027-08-02": "total solar eclipse",
+        "2027-08-17": "partial lunar eclipse",
+        "2028-01-12": "partial lunar eclipse",
+        "2028-07-06": "partial lunar eclipse",
+        "2028-07-22": "total solar eclipse",
+        "2028-12-31": "partial lunar eclipse",
+        "2029-06-26": "partial lunar eclipse",
+        "2029-07-22": "total solar eclipse",
+        "2029-12-20": "partial lunar eclipse",
+        "2030-06-01": "partial solar eclipse",
+        "2030-06-15": "partial lunar eclipse",
+        "2030-11-25": "partial lunar eclipse"
+      };
+      const dateStr = rawTime.slice(0, 10);
+      if (eclipseDates.includes(dateStr)) {
+        // Only add once per day (at first hour)
+        if (dt.getHours() === 17) {
+          events.push({
+            time,
+            variant: "sky",
+            title: "🌀 Eclipse",
+            detail: `A${" "+eclipseTypes[dateStr] || "n eclipse"} is happening today! Look up safely. <button style="margin-top: 0.5rem;" onclick="window.location.href='https://www.bing.com/search?q=${dateStr} eclipse'">More info</button>`
+        });
+        }
+      };
+
+      // 🌌 Aurora
+      const auroraProbability = await checkAuroraChance(dt);
+      if (dt.getHours() === 4 && auroraProbability) {
+        events.push({
+          time,
+          variant: "sky",
+          title: "🌌 Aurora",
+          detail: `There's a ${auroraProbability}% chance of auroras tonight!`
+        });
+      }
+    }
+
+    return events;
+  } catch (error) {
+    console.error("Failed to generate forecast events:", error);
+    return [];
+  }
+}
+
+async function fetchData() {
+  if (!lat || !lng) return;
+
+  const weatherURL = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=temperature_2m,relative_humidity_2m,uv_index,windspeed_10m,precipitation,weather_code&current=temperature_2m,relative_humidity_2m,uv_index,windspeed_10m,precipitation,weather_code&forecast_hours=10&timezone=auto`;
+  const marineURL = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&hourly=sea_surface_temperature,wave_height,sea_level_height_msl&current=sea_surface_temperature,wave_height&forecast_hours=48&timezone=auto`;
+  const airURL = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&hourly=pm2_5,ozone&current=pm2_5&timezone=auto`
+  try {
+    // Destroy existing Chart.js instances before creating new ones
+    if (window.recChartInstance) {
+      window.recChartInstance.destroy();
+      window.recChartInstance = null;
+    }
+    if (window.tideChartInstance) {
+      window.tideChartInstance.destroy();
+      window.tideChartInstance = null;
+    }
+    const [weatherRes, marineRes, airRes] = await Promise.all([fetch(weatherURL), fetch(marineURL), fetch(airURL)]);
+    const weather = await weatherRes.json();
+    const marine = await marineRes.json();
+    const air = await airRes.json()
+
+    const temp = weather.current.temperature_2m;
+    const humidity = weather.current.relative_humidity_2m;
+    const uv = weather.current.uv_index;
+    const wind = weather.current.windspeed_10m;
+    const sea = marine.current.sea_surface_temperature;
+    const wave = marine.current.wave_height;
+    const code = weather.current.weather_code;
+    console.info(air)
+    const pm25 = air.current.pm2_5 ?? 200;
+
+    const condition = getConditionEmoji(code);
+    document.getElementById("tempValue").textContent = temp;
+    document.getElementById("humidityValue").textContent = humidity;
+    document.getElementById("uvValue").textContent = uv;
+    document.getElementById("seaValue").textContent = sea;
+    document.getElementById("waveValue").textContent = wave.toFixed(1);
+    document.getElementById("windValue").textContent = wind.toFixed(1);
+    document.getElementById("airValue").textContent = pm25.toFixed(1)
+    document.getElementById("weatherSummary").textContent = `${condition} • ${temp}°C, Sea ${sea}°C, UV ${uv}, Waves ${wave.toFixed(1)}m`;
+
+    const { total, breakdown } = computeScore(temp, sea, wind, humidity, uv, wave, code);
+
+    if (total >= 9) {
+      recBox.textContent = `🌊 Perfect (${total.toFixed(1)}/10)`;
+      recBox.style.background = "linear-gradient(90deg, #3ce8dd, #57b5f9)";
+    } else if (total >= 7) {
+      recBox.textContent = `🌿 Good (${total.toFixed(1)}/10)`;
+      recBox.style.background = "linear-gradient(90deg, #0ff223, #21a361)";
+    } else if (total >= 4) {
+      recBox.textContent = `🌴 OK (${total.toFixed(1)}/10)`;
+      recBox.style.background = "linear-gradient(90deg, #99af0e, #808c00)";
+    } else if (total >= 1) {
+      recBox.textContent = `⚡ Bad (${total.toFixed(1)}/10)`;
+      recBox.style.background = "linear-gradient(90deg, #fbc638, #f68c1f)";
+    } else {
+      recBox.textContent = `⛔ Horrible (${total.toFixed(1)}/10)`;
+      recBox.style.background = "linear-gradient(90deg, #ff0000, #b33030)";
+    }
+
+    recBox.onclick = () => {
+    alert(`📊 Scoring breakdown:
+- Air temp: ${temp}°C vs ${preferredTemp}°C (±${tempTolerance}°) → ${breakdown.airScore.toFixed(1)} pts
+- Sea temp: ${sea}°C vs ${seaTemp}°C (±${tempTolerance}°) → ${breakdown.seaScore.toFixed(1)} pts
+- Wind: ${wind.toFixed(1)} km/h → -${breakdown.windPenalty}
+- Humidity: ${humidity}% → -${breakdown.humidityPenalty}
+- UV index: ${uv} → -${breakdown.uvPenalty}
+- Wave height: ${wave.toFixed(1)} m → -${breakdown.wavePenalty}
+- Conditions: ${condition} → -${breakdown.conditionPenalty}
+- Air quality (PM 2.5): ${pm25} → -${breakdown.pm25Penalty}
+
+🎯 Final score: ${total.toFixed(1)} / 10`);
+    };
+
+    const hours = weather.hourly.time.slice(0, 10).map(t => new Date(t).getHours());
+    const hourlyData = Array.from({ length: 10 }).map((_, i) => ({
+      hour: hours[i],
+      temp: weather.hourly.temperature_2m[i],
+      humidity: weather.hourly.relative_humidity_2m[i],
+      uv: weather.hourly.uv_index[i],
+      wind: weather.hourly.windspeed_10m[i],
+      sea: marine.hourly.sea_surface_temperature[i],
+      wave: marine.hourly.wave_height[i],
+      code: weather.hourly.weather_code[i],
+      pm25: air.hourly.pm2_5[i]
+    }));
+
+    const scores = hourlyData.map(entry =>
+      computeScore(entry.temp, entry.sea, entry.wind, entry.humidity, entry.uv, entry.wave, entry.code, entry.pm25).total
+    );
+
+    const chartColors = scores.map(s =>
+      s >= 9 ? "#3ce8dd" :
+      s >= 7 ? "#0bd38b" :
+      s >= 4 ? "#99af0e" :
+      s >= 1 ? "#f8a135" :
+              "#b33030"
+    );
+
+    window.recChartInstance = new Chart(document.getElementById("recChart").getContext("2d"), {
+      type: "bar",
+      data: {
+        labels: hourlyData.map(d => `${d.hour}:00`),
+        datasets: [{
+          label: "Recommendation score",
+          data: scores,
+          backgroundColor: chartColors
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            min: 0,
+            max: 10,
+            beginAtZero: true,
+            ticks: { stepSize: 2 }
+          },
+          x: {
+            ticks: {
+              color: "#666"
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+
+    setupHourlySelector(hourlyData);
+
+    const seaLevelTimes = marine.hourly.time;
+    const seaLevelHeights = marine.hourly.sea_level_height_msl;
+
+    const todayISO = new Date().toISOString().split("T")[0];
+    const tomorrowISO = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+    const todayTides = seaLevelTimes
+      .map((t, i) => ({ time: t, height: seaLevelHeights[i] }))
+      .filter(p => {
+        const now = Date.now();
+        const t = new Date(p.time).getTime();
+        return t >= now && t <= now + 24 * 60 * 60 * 1000;
+      });
+
+    const tideLabels = todayTides.map(p => {
+      const d = new Date(p.time);
+      return `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+    });
+
+    const tideHeights = todayTides.map(p => p.height);
+    const minHeight = Math.min(...tideHeights);
+
+    document.getElementById("tideSummary").textContent = "🌊 Sea level height (tide-influenced)";
+
+    window.tideChartInstance = new Chart(document.getElementById("tideChart").getContext("2d"), {
+      type: "line",
+      data: {
+        labels: tideLabels,
+        datasets: [{
+          label: "Sea Level (m)",
+          data: tideHeights,
+          borderColor: "#259ff0",
+          backgroundColor: "#259ff0",
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: context => `Tide level: ${context.raw.toFixed(2)} m` } } },
+        scales: {
+          y: {
+            ticks: {
+              callback: value => `${Math.abs(value).toFixed(2)} m`
+            }
+          },
+          x: {
+            ticks: { color: "#666" }
+          }
+        }
+      }
+    });
+
+    function findTideExtremes(data) {
+      const extremes = [];
+      for (let i = 1; i < data.length - 1; i++) {
+        const prev = data[i - 1].height;
+        const curr = data[i].height;
+        const next = data[i + 1].height;
+
+        const isHigh = curr > prev && curr > next;
+        const isLow = curr < prev && curr < next;
+
+        if (isHigh || isLow) {
+          extremes.push({
+            ...data[i],
+            type: isHigh ? "High" : "Low"
+          });
+        }
+      }
+      // Find the latest tide (last one before now)
+      const now = Date.now();
+      let latestIdx = -1;
+      for (let i = 0; i < extremes.length; i++) {
+        if (new Date(extremes[i].time).getTime() <= now) {
+          latestIdx = i;
+        } else {
+          break;
+        }
+      }
+      // Find the first future tide
+      let futureIdx = extremes.findIndex(e => new Date(e.time).getTime() > now);
+      // If all tides are in the past, start from the last one
+      if (futureIdx === -1) futureIdx = extremes.length;
+          
+      const result = [];
+      // Add latest past tide with asterisk, if it exists
+      if (latestIdx >= 0 && latestIdx < extremes.length) {
+        result.push({ ...extremes[latestIdx], type: extremes[latestIdx].type + "*" });
+      }
+      // Add up to 6 future tides (both highs and lows)
+      for (let i = futureIdx; i < extremes.length && result.length < 7; i++) {
+        result.push(extremes[i]);
+      }
+      return result;
+    }
+
+    const allTides = seaLevelTimes
+      .map((t, i) => ({ time: t, height: seaLevelHeights[i] }))
+      .filter(p => p.time.startsWith(todayISO) || p.time.startsWith(tomorrowISO));
+
+    const tideExtremes = findTideExtremes(allTides);
+
+    const tideList = tideExtremes.map(p => {
+      const dt = new Date(p.time);
+      const time = dt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      return `<strong>${time} • ${p.type}:</strong> ${p.height.toFixed(2)} m`;
+    }).join("<br>");
+
+    const tideDetails = document.getElementById("tideSummary");
+    tideDetails.innerHTML = `<strong>Tide times:</strong><br>${tideList}`;
+
+    const events = await generateEvents(weatherURL, marineURL, airURL);
+    generateUpcomingCards(events);
+    const warnings = await getCurrentWarnings(weatherURL, marineURL, airURL);
+    generateWarnings(warnings);
+    sunMoon();
+    alerts(total, warnings, code, temp, sea);
+  } catch (e) {
+    document.getElementById("status").textContent = "⚠ Some data has took a day off. I mean, it's a vacation app, right?";
+    console.error(e);
+  }
+}
+
+fetchData();
+setInterval(fetchData, 5 * 60000);
+</script>
+</body>
+</html>

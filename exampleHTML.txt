@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>About • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <h1>🌊 About SeaChill</h1>
+      <p>Your personal weather companion for sunny escapes</p>
+    </header>
+
+    <section class="card">
+      <h2>What is SeaChill?</h2>
+      <p>
+        SeaChill is a simple and sunny web app that lets you know when the weather is perfect for a beach day.
+        It provides real-time weather data for your favorite beaches, helping you plan your next sunny escape.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Cookies and local storage</h2>
+      <p>
+        SeaChill doesn’t track you or send data to any server.
+        Your preferences—like your favorite temperature, theme, and chosen beach—are saved locally in your browser using <strong>localStorage</strong>.
+      </p>
+      <p>
+        These settings are only used to improve your experience and are never shared.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Credits</h2>
+      <p>
+        SeaChill is built with sun, sea and vacation vibes by <a href="https://github.com/mishinger/seachill">Mishinger</a>.
+        Special thanks to the open-source community for providing the tools that make this app possible, to Microsoft Copilot for coding assistance, and to the <a href="https://open-meteo.com/">Open-meteo</a>, <a href="https://github.com/mourner/suncalc">SunCalc.js</a> and <a href="https://leafletjs.com">Leaflet.js</a> APIs for data and maps. We also shouldn't forget VSCode, which is the best code editor for web development.
+      </p>
+
+    <footer>
+      <p><em>Enjoy the sun! 🌅🌴🍹</em></p>
+      <button onclick="window.location.href='settings.html'" class="button-text">Settings</button> |
+      <button onclick="window.location.href='index.html'" class="button-text">Home</button> |
+      <button onclick="window.location.href='tos.html'" class="button-text">Terms and conditions</button>
+    </footer>
+  </main>
+
+  <script>
+    const themeMap = {
+      light: "light.css",
+      dark: "dark.css",
+      twilight: "twilight.css",
+      jungle: "jungle.css",
+      breeze: "breeze.css",
+      void: "void.css"
+    };
+
+    const savedTheme = localStorage.getItem("preferredTheme") || "system";
+    const themeLink = document.getElementById("themeStylesheet");
+
+    if (themeMap[savedTheme]) {
+      themeLink.href = themeMap[savedTheme];
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      themeLink.href = prefersDark ? themeMap.dark : themeMap.light;
+    }
+  </script>
+</body>
+</html>

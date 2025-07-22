@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link id="themeStylesheet" rel="stylesheet" href="light.css">
+</head>
+<body>
+  <main style="text-align: center;">
+    <h1>Lost at sea?</h1>
+    <p>You are looking for a coast that doesn't exist. Here is a map to help you find your way to the homepage.</p>
+    <h1><a href='index.html'>🗺</a></h1>
+  </main>
+
+<script>
+const themeMap = {
+  light: "light.css",
+  dark: "dark.css",
+  twilight: "twilight.css",
+  jungle: "jungle.css",
+  breeze: "breeze.css",
+  void: "void.css"
+};
+
+const themeLink = document.getElementById("themeStylesheet");
+
+if (savedTheme && themeMap[savedTheme]) {
+  themeLink.href = themeMap[savedTheme];
+} else {
+  // Device theme fallback
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  themeLink.href = prefersDark ? themeMap.dark : themeMap.light;
+}
+</script>
+</body>
+</html>

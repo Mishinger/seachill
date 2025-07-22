@@ -1,0 +1,65 @@
+[
+  {
+    "name": "Seline Beach",
+    "icon": "🌴",
+    "lat": 44.2772,
+    "lng": 15.4799,
+    "country": "Croatia"
+  },
+  {
+    "name": "Plaža Pisak",
+    "icon": "🌴",
+    "lat": 44.2686,
+    "lng": 15.4787,
+    "country": "Croatia"
+  },
+  {
+    "name": "Cuvi Beach",
+    "icon": "🌴",
+    "lat": 45.0705,
+    "lng": 13.6503,
+    "country": "Croatia"
+  },
+  {
+    "name": "Zlatni Rat",
+    "icon": "🌴",
+    "lat": 43.2587,
+    "lng": 16.6518,
+    "country": "Croatia"
+  },
+  {
+    "name": "Stiniva Beach",
+    "icon": "🌴",
+    "lat": 43.0214,
+    "lng": 16.1444,
+    "country": "Croatia"
+  },
+  {
+    "name": "Sveti Jakov",
+    "icon": "🌴",
+    "lat": 42.6403,
+    "lng": 18.1206,
+    "country": "Croatia"
+  },
+  {
+    "name": "Dubovica",
+    "icon": "🌴",
+    "lat": 43.1433,
+    "lng": 16.5522,
+    "country": "Croatia"
+  },
+  {
+    "name": "Playa de Rodas",
+    "icon": "🏖️",
+    "lat": 42.2333,
+    "lng": -8.9000,
+    "country": "Spain"
+  },
+  {
+    "name": "Balos Beach",
+    "icon": "🏖️",
+    "lat": 35.5792,
+    "lng": 23.5861,
+    "country": "Greece"
+  }
+]

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API and iframe • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <button onclick="window.location.href='index.html'" class="button button-text">← Back</button>
+    <h1>🍃 The SeaChill API and iFrame (experimental)</h1>
+    <section>
+      <h2>API</h2>
+      <p>The SeaChill API provides access to various beach and weather stats for your site/app.</p>
+      <p>To use the API, make a GET request to:</p>
+      <div class="code-block"><pre><code>GET /beach?lat=LATITUDE&amp;lng=LONGITUDE&amp;preferredTemp=30&amp;seaTemp=26&amp;tempTolerance=1.5&amp;windLimit=12&amp;hour=n3</code></pre></div>
+
+      <h3>📍 lat <span style="font-weight:normal;">(required)</span></h3>
+      <p>Latitude of the beach, in decimal degrees. Example: <code>lat=44.2686</code></p>
+  
+      <h3>📍 lng <span style="font-weight:normal;">(required)</span></h3>
+      <p>Longitude of the beach, in decimal degrees. Example: <code>lng=15.4787</code></p>
+  
+      <h3>⏲️ hour <span style="font-weight:normal;">(optional)</span></h3>
+      <p>
+        Controls the forecast window:<br>
+        <code>c</code> = current hour (default)<br>
+        <code>n4</code> = next 4 hours<br>
+        <code>0</code>–<code>23</code> = specific forecast hour (UTC)
+      </p>
+  
+      <h3>🌡️ preferredTemp <span style="font-weight:normal;">(optional)</span></h3>
+      <p>Your ideal <strong>air temperature</strong> in °C. Used to score comfort. Example: <code>preferredTemp=30</code></p>
+  
+      <h3>🌊 seaTemp <span style="font-weight:normal;">(optional)</span></h3>
+      <p>Your preferred <strong>sea surface temperature</strong> in °C. Example: <code>seaTemp=26.5</code></p>
+  
+      <h3>🧊 tempTolerance <span style="font-weight:normal;">(optional)</span></h3>
+      <p>Allowed deviation (± °C) for both air and sea temps before comfort scores are reduced. Example: <code>tempTolerance=2</code></p>
+  
+      <h3>📤 Response Fields (if scoring requested)</h3>
+      <div class="code-block"><pre><code>{
+  "location": { "lat": "number", "lng": "number" },
+  "time": "...",
+  "forecast": [
+    {
+      "hour": "2025-06-30T19:00",
+      "air": 29.5,
+      "sea": 25.8,
+      "wind": 9.1,
+      "humidity": 56,
+      "uv": 2,
+      "wave": 0.2,
+      "condition": 1
+    }
+  ],
+  "recommendation": [
+    {
+      "hour": "2025-06-30T18:00",
+      "airScore": number,
+      "seaScore": number,
+      "total": number
+    }
+  ]
+}</code></pre></div>
+    </section>
+
+    <section>
+      <h2>iFrame</h2>
+      <p>To embed a beach widget in your site, use the following iFrame:</p>
+      <div class="code-block"><pre><code>&lt;iframe src="https://yourdomain.com/iframe.html?lat=LATITUDE&amp;lng=LONGITUDE&amp;name=BEACH_NAME&amp;preferredTemp=30&amp;seaTemp=26&amp;tempTolerance=1.5&amp;windLimit=12&amp;bg=#fffbe0&amp;text=#222&amp;accent=#0077cc" width="360" height="500" style="border: none; border-radius: 12px;" loading="lazy"&gt;&lt;/iframe&gt;</code></pre></div>
+      <p>Replace the parameters with your desired values.</p>
+  </main>
+
+<script>
+  const savedTheme = localStorage.getItem("preferredTheme");
+
+  const themeMap = {
+    light: "light.css",
+    dark: "dark.css",
+    twilight: "twilight.css",
+    jungle: "jungle.css",
+    breeze: "breeze.css",
+    void: "void.css"
+  };
+
+  const themeLink = document.getElementById("themeStylesheet");
+  if (savedTheme && themeMap[savedTheme]) {
+    themeLink.href = themeMap[savedTheme];
+  } else {
+    // Device theme fallback
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    themeLink.href = prefersDark ? themeMap.dark : themeMap.light;
+  }
+</script>
+</body>
+</html>

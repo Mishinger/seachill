@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Profile • SeaChill</title><script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <button type="button" onclick="window.location.href='index.html'" class="button button-text">← Back</button>
+      <h1>🦀 My profile</h1>
+    </header>
+    <section class="card" id="profileCard" style="text-align: center;">
+      <div id="avatarPic" class="avatar-circle">🌴</div>
+      <h2 id="nameDisplay">Anonymous</h2>
+      <p id="bioDisplay" style="font-style: italic; margin-top: 1em;">No bio yet...</p>
+      <p>Gender: <strong id="genderDisplay">—</strong></p>
+    </section>
+
+    <footer>
+      <button onclick="window.location.href='profileedit.html'" class="button-text">✏️ Edit my profile</button>
+    </footer>
+  </main>
+
+  <script>
+    // 🌓 Theme setup
+    const themeMap = {
+      light: "light.css",
+      dark: "dark.css",
+      twilight: "twilight.css",
+      jungle: "jungle.css",
+      breeze: "breeze.css",
+      void: "void.css"
+    };
+    const selected = localStorage.getItem("preferredTheme") || "system";
+    const themeEl = document.getElementById("themeStylesheet");
+    themeEl.href = themeMap[selected] || (
+      matchMedia("(prefers-color-scheme: dark)").matches ? themeMap.dark : themeMap.light
+    );
+    
+    const profile = JSON.parse(localStorage.getItem("seaProfile") || "{}");
+
+    function mdToHtml(text) {
+      converter = new showdown.Converter;
+      return converter.makeHtml(text);
+    }
+
+    profile.bio = mdToHtml(profile.bio)
+
+    // 🧠 Profile rendering
+    document.getElementById("avatarPic").textContent = profile.avatar || "🌴";
+    document.getElementById("avatarPic").style.backgroundColor = profile.color || "#00bcd4";
+    document.getElementById("nameDisplay").textContent = profile.username || "Anonymous";
+    document.getElementById("genderDisplay").textContent = profile.gender || "—";
+    document.getElementById("bioDisplay").innerHTML = profile.bio || "No bio yet...";
+  </script>
+
+  <style>
+    .avatar-circle {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      font-size: 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      color: #fff;
+      background-color: #00bcd4;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+  </style>
+</body>
+</html>

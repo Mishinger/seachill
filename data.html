@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <button type="button" onclick="window.location.href='settings.html'" class="button button-text">← Back</button>
+      <h1>📊 Data management</h1>
+      <p>Manage your saved data and preferences</p>
+    </header>
+
+    <section class="card">
+      <button type="button" onclick="createRecoveryCode()" class="button button-accent">Get recovery code</button>
+      <button type="button" onclick="window.location.href='import.html'" class="button button-default">Use a recovery code</button>
+      <button type="button" onclick="alert('Recovery codes allow you to restore your data if you switch devices or clear your browser storage. Keep them safe!')" class="button button-default">About recovery codes</button>
+      <button type="button" onclick="resetData()" class="button button-default">Remove my data</button>
+      <p class="form-text">Your data is stored in your browser's local storage.</p>
+    </section>
+
+    <footer>
+    </footer>
+  </main>
+
+  <script>
+    const themeMap = {
+      light: "light.css",
+      dark: "dark.css",
+      twilight: "twilight.css",
+      jungle: "jungle.css",
+      breeze: "breeze.css",
+      void: "void.css"
+    };
+
+    function applyTheme(theme) {
+      const link = document.getElementById("themeStylesheet");
+      if (themeMap[theme]) {
+        link.href = themeMap[theme];
+      } else {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        link.href = prefersDark ? themeMap.dark : themeMap.light;
+      }
+    }
+
+    applyTheme(localStorage.getItem("preferredTheme") || "light");
+
+    function resetData() {
+      if (confirm("Are you sure you want to remove all your data? You can't go back if you continue!")) {
+        localStorage.clear();
+        window.location.href = "afterreset.html";
+      }
+    }
+
+    function createRecoveryCode() {
+      const data = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        data[key] = localStorage.getItem(key);
+      }
+      const recoveryCode = JSON.stringify(data, null, 2);
+      alert("Your recovery code:\n\n" + recoveryCode);
+    }
+  </script>
+</body>
+</html>

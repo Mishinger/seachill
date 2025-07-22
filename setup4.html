@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Setup • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main style="text-align: center;">
+    <h1 class="celebrate">🌴</h1>
+    <h1>You’re all set!</h1>
+    <p>Your beach preferences are saved.<br/>Let’s find your perfect chill spot.</p>
+
+    <button class="button button-accent" onclick="goHome()">Go to home</button>
+    <button class="button button-text" onclick="window.location.href = 'setup4.html'">Change my settings</button>
+  </main>
+
+  <script>
+    const themeMap = {
+      light: "light.css",
+      dark: "dark.css",
+      twilight: "twilight.css",
+      jungle: "jungle.css",
+      breeze: "breeze.css",
+      void: "void.css"
+    };
+
+    const savedTheme = localStorage.getItem("preferredTheme") || "system";
+    const link = document.getElementById("themeStylesheet");
+
+    if (themeMap[savedTheme]) {
+      link.href = themeMap[savedTheme];
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      link.href = prefersDark ? themeMap.dark : themeMap.light;
+    }
+
+    function goHome() {
+      window.location.href = "index.html";
+    }
+  </script>
+</body>
+</html>

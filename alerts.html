@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Alert options • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <button onclick="saveData()" class="button button-text">← Back</button>
+      <h1>🔔 Alert options</h1>
+      <p>Customize your alert preferences</p>
+    </header>
+
+    <section class="card">
+      <p>If you have a smart watch that supports notifications (and is waterproof!), you can receive alerts directly on your wrist. Just customize your alerts below and the notifications will do the rest!</p>
+    </section>
+
+    <section>
+      <form id="alertForm">
+        <p></p>
+        <input type="checkbox" id="alertToggle" />
+        <label for="alertToggle">Enable the alert section</label>
+      </form>
+    </section>
+
+    <section>
+      <h2>When should I receive alerts?</h2>
+      <form id="alertSettingsForm">
+        <label for="alertWarning"><strong>🚨 Weather warnings</strong> - the severe ones may save your life, so you can't turn them off. SeaChill wants rest, but not at the cost of danger.</label>
+        <select id="alertWarning" name="alertWarning">
+          <option value="always">Always</option>
+          <option value="when-severe">When severe</option>
+        </select>
+        <label for="alertTemp"><strong>🔥 Temperature alerts</strong></label>
+        <select id="alertTemp" name="alertTemp">
+          <option value="not-fav">When not the favorite temp</option>
+          <option value="never">Never</option>
+        </select>
+        <label for="alertSeaTemp"><strong>🌊 Sea temperature alerts</strong></label>
+        <select id="alertSeaTemp" name="alertSeaTemp">
+          <option value="not-fav">When not the favorite sea temp</option>
+          <option value="never">Never</option>
+        </select>
+        <label for="alertBeachCall"><strong>🌴 Beach call alerts</strong> - these call you to the beach if the weather is good.</label>
+        <select id="alertBeachCall" name="alertBeachCall">
+          <option value="score-perfect">When the score is perfect</option>
+          <option value="score-good">When the score is good</option>
+          <option value="score-ok">When the score is ok</option>
+          <option value="never">Never</option>
+        </select>
+        <label for="alertRain"><strong>🌧️ Rain alerts</strong></label>
+        <select id="alertRain" name="alertRain">
+          <option value="rain">When rain is expected</option>
+          <option value="never">Never</option>
+        </select>
+      </form>
+    </section>
+  </main>
+
+<script>
+const alertForm = document.getElementById("alertForm");
+alertForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const phoneNumber = document.getElementById("phoneNumber").value;
+  // Save phone number to localStorage or send it to your server
+  localStorage.setItem("phone", phoneNumber);
+  alert("Phone number saved!");
+});
+
+const themeMap = {
+  light: "light.css",
+  dark: "dark.css",
+  twilight: "twilight.css",
+  jungle: "jungle.css",
+  breeze: "breeze.css",
+  void: "void.css"
+};
+
+const themeStylesheet = document.getElementById("themeStylesheet");
+let savedTheme = localStorage.getItem("preferredTheme") || "light";
+if (!themeMap[savedTheme]) {
+  savedTheme = "light";
+}
+themeStylesheet.setAttribute("href", themeMap[savedTheme]);
+
+const form = document.getElementById("alertForm");
+const form2 = document.getElementById("alertSettingsForm");
+
+function saveData() {
+  const alertToggle = document.getElementById("alertToggle").checked;
+  localStorage.setItem("alertEnabled", alertToggle);
+  localStorage.setItem("alertWarning", document.getElementById("alertWarning").value);
+  localStorage.setItem("alertTemp", document.getElementById("alertTemp").value);
+  localStorage.setItem("alertSeaTemp", document.getElementById("alertSeaTemp").value);
+  localStorage.setItem("alertBeachCall", document.getElementById("alertBeachCall").value);
+  localStorage.setItem("alertRain", document.getElementById("alertRain").value);
+  window.location.href = "settings.html";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const alertEnabled = localStorage.getItem("alertEnabled") === "true";
+  document.getElementById("alertToggle").checked = alertEnabled;
+  document.getElementById("alertWarning").value = localStorage.getItem("alertWarning") || "always";
+  document.getElementById("alertTemp").value = localStorage.getItem("alertTemp") || "not-fav";
+  document.getElementById("alertSeaTemp").value = localStorage.getItem("alertSeaTemp") || "not-fav";
+  document.getElementById("alertBeachCall").value = localStorage.getItem("alertBeachCall") || "score-good";
+  document.getElementById("alertRain").value = localStorage.getItem("alertRain") || "rain";
+});
+</script>
+</body>
+</html>

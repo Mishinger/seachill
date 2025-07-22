@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Setup • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <button onclick="window.location.href='setup2.html'" class="button button-text">← Back</button>
+    <h1>🌡️ Your comfort zone</h1>
+    <p>Tell us what beach weather makes you smile</p>
+
+    <form id="tempForm">
+      <div class="form-group">
+        <label for="preferredTemp">Favorite beach temp</label>
+        <input
+          type="text"
+          id="preferredTemp"
+          name="preferredTemp"
+          placeholder="e.g. 30"
+        />
+      </div>
+      <div class="form-group">
+        <label for="seaTemp">Favorite sea temp</label>
+        <input
+          type="text"
+          id="seaTemp"
+          name="seaTemp"
+          placeholder="e.g. 28"
+        />
+      </div>
+      <div class="form-group">
+        <label for="tempTolerance">Comfort room</label>
+        <input
+          type="text"
+          id="tempTolerance"
+          name="tempTolerance"
+          placeholder="e.g. 3"
+        />
+      </div>
+
+      <button type="submit" class="button button-accent" style="margin-top: 5px;">Next</button>
+    </form>
+  </main>
+
+  <script>
+    const themeMap = {
+      light: "light.css",
+      dark: "dark.css",
+      twilight: "twilight.css",
+      jungle: "jungle.css",
+      breeze: "breeze.css",
+      void: "void.css"
+    };
+
+    const savedTheme = localStorage.getItem("preferredTheme") || "system";
+    const link = document.getElementById("themeStylesheet");
+
+    if (themeMap[savedTheme]) {
+      link.href = themeMap[savedTheme];
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      link.href = prefersDark ? themeMap.dark : themeMap.light;
+    }
+
+    const form = document.getElementById("tempForm");
+    const preferredTemp = document.getElementById("preferredTemp");
+    const tempTolerance = document.getElementById("tempTolerance");
+
+    // Prefill if already stored
+    window.addEventListener("load", () => {
+      preferredTemp.value = localStorage.getItem("preferredBeachTemp") || "";
+      tempTolerance.value = localStorage.getItem("tempTolerance") || "";
+      seaTemp.value = localStorage.getItem("seaTemp") || "";
+    });
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      localStorage.setItem("preferredBeachTemp", preferredTemp.value.trim());
+      localStorage.setItem("tempTolerance", tempTolerance.value.trim());
+      localStorage.setItem("seaTemp", seaTemp.value.trim());
+      window.location.href = "setup4.html";
+    });
+  </script>
+</body>
+</html>

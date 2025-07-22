@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Select a beach • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+  <style>
+    body { font-family: system-ui, sans-serif; }
+    #map {
+      height: 240px; border-radius: 1rem;
+      box-shadow: var(--shadow); margin-bottom: 2rem;
+      background: linear-gradient(to bottom right, #00aeff, #ffcd71);
+    }
+    .leaflet-control-attribution {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      padding: 0 !important;
+      margin: 0 8px 8px 0; /* optional: adjust spacing */
+      font-size: 11px;
+      color: #000000; /* or any color that fits your design */
+    }
+    .leaflet-control-attribution a {
+      color: #000000; /* or any color that fits your design */
+      text-decoration: none;
+    }
+    .emoji-marker { text-align: center; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); }
+    .filters {
+      display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0 2rem;
+    }
+    .section { margin-bottom: 2rem; }
+    .beach-emoji { font-size: 1.4rem; }
+    .card-buttons { display: flex; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <button onclick="location.href='index.html'" class="button button-text">← Back</button>
+    <h1>🌍 Select a beach</h1>
+
+    <div class="filters">
+      <input type="search" id="searchInput" placeholder="Search beach name…" />
+      <select id="countryFilter">
+        <option value="">🌎 All countries</option>
+      </select>
+      <select id="positionFilter">
+        <option value="">🧭 All coastlines</option>
+        <option value="🌴">🌴 Sea</option>
+        <option value="🐚">🐚 Ocean</option>
+        <option value="🌅">🌅 Lake</option>
+      </select>
+      <select id="typeFilter">
+        <option value="">🌊 All types</option>
+        <option value="sand">🏝️ Sand</option>
+        <option value="pebble">⚪ Pebble</option>
+        <option value="rock">🗿 Rock</option>
+      </select>
+    </div>
+
+    <div id="map"></div>
+
+    <p>or choose from</p>
+    <h2>🌾 My lists</h2>
+
+    <div class="section">
+      <h3>📍 Recent</h3>
+      <select id="recentBeaches">
+        <option disabled selected>Select recent beach…</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <h3>💙 Favorites</h3>
+      <div id="favoritesList" class="card-section"></div>
+    </div>
+  </main>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+const themeMap = {
+  light: "light.css", dark: "dark.css", twilight: "twilight.css",
+  jungle: "jungle.css", breeze: "breeze.css", void: "void.css"
+};
+const countrySelect = document.getElementById("countryFilter");
+const searchInput = document.getElementById("searchInput");
+const positionSelect = document.getElementById("positionFilter");
+const typeSelect = document.getElementById("typeFilter");
+const savedTheme = localStorage.getItem("preferredTheme") || "system";
+const link = document.getElementById("themeStylesheet");
+link.href = themeMap[savedTheme] || (
+  window.matchMedia("(prefers-color-scheme: dark)").matches ? themeMap.dark : themeMap.light
+);
+
+const beaches = [
+  // 🌴 Sea beaches (Mediterranean, Adriatic, Aegean, etc.)
+  { name: "Zlatni Rat", icon: "🌴", lat: 43.2587, lng: 16.6518, country: "Croatia", type: "pebble" },
+  { name: "Stiniva", icon: "🌴", lat: 43.0214, lng: 16.1444, country: "Croatia", type: "rock" },
+  { name: "Pasjača", icon: "🌴", lat: 42.5067, lng: 18.3136, country: "Croatia", type: "rock" },
+  { name: "Banje Beach", icon: "🌴", lat: 42.6412, lng: 18.1135, country: "Croatia", type: "pebble" },
+  { name: "Sveti Stefan Beach", icon: "🌴", lat: 42.2569, lng: 18.8964, country: "Montenegro", type: "pebble" },
+  { name: "Nissi Beach", icon: "🌴", lat: 34.9847, lng: 33.9814, country: "Cyprus", type: "sand" },
+  { name: "Ksamil Beach", icon: "🌴", lat: 39.7683, lng: 20.0033, country: "Albania", type: "sand" },
+  { name: "Plaža Pisak", icon: "🌴", lat: 44.2686, lng: 15.4787, country: "Croatia", type: "pebble" },
+  { name: "Seline Beach", icon: "🌴", lat: 44.2772, lng: 15.4799, country: "Croatia", type: "pebble" },
+  { name: "Cuvi Beach", icon: "🌴", lat: 45.0705, lng: 13.6503, country: "Croatia", type: "pebble" },
+  { name: "Dubovica", icon: "🌴", lat: 43.1433, lng: 16.5356, country: "Croatia", type: "pebble" },
+  { name: "Šunj Beach", icon: "🌴", lat: 42.6783, lng: 17.9425, country: "Croatia", type: "sand" },
+  { name: "Prapratno Beach", icon: "🌴", lat: 42.8497, lng: 17.6933, country: "Croatia", type: "sand" },
+  { name: "Sakarun Beach", icon: "🌴", lat: 44.1394, lng: 14.8828, country: "Croatia", type: "sand" },
+  { name: "Elafonissi Beach", icon: "🌴", lat: 35.2711, lng: 23.5389, country: "Greece", type: "sand" },
+  { name: "Navagio Beach", icon: "🌴", lat: 37.8590, lng: 20.6244, country: "Greece", type: "pebble" },
+  { name: "Playa Flamenco", icon: "🌴", lat: 18.3333, lng: -65.3000, country: "Puerto Rico", type: "sand" },
+  { name: "Tulum Beach", icon: "🌴", lat: 20.2110, lng: -87.4653, country: "Mexico", type: "sand" },
+  { name: "Playa Norte", icon: "🌴", lat: 21.2500, lng: -86.7500, country: "Mexico", type: "sand" },
+  { name: "Playa de las Catedrales", icon: "🌴", lat: 43.5667, lng: -7.1167, country: "Spain", type: "sand" },
+  { name: "Playa de la Concha", icon: "🌴", lat: 43.3214, lng: -1.9814, country: "Spain", type: "sand" },
+  { name: "Playa de Bolonia", icon: "🌴", lat: 36.1000, lng: -5.7500, country: "Spain", type: "sand" },
+  { name: "Playa de la Victoria", icon: "🌴", lat: 36.5167, lng: -6.2833, country: "Spain", type: "sand" },
+  { name: "Playa de las Teresitas", icon: "🌴", lat: 28.4800, lng: -16.2500, country: "Spain", type: "sand" },
+  { name: "Playa de Maspalomas", icon: "🌴", lat: 27.7500, lng: -15.5500, country: "Spain", type: "sand" },
+  { name: "Playa de la Malvarrosa", icon: "🌴", lat: 39.4667, lng: -0.3167, country: "Spain", type: "sand" },
+  { name: "Bačvice Beach", icon: "🌴", lat: 43.5062, lng: 16.4500, country: "Croatia", type: "sand" },
+  { name: "Punta Rata", icon: "🌴", lat: 43.3586, lng: 16.9297, country: "Croatia", type: "pebble" },
+  { name: "Banje Beach", icon: "🌴", lat: 42.6412, lng: 18.1135, country: "Croatia", type: "pebble" },
+  { name: "Sakarun Beach", icon: "🌴", lat: 44.1394, lng: 14.8828, country: "Croatia", type: "sand" },
+  { name: "Stiniva Beach", icon: "🌴", lat: 43.0214, lng: 16.1444, country: "Croatia", type: "rock" },
+  { name: "Dubovica Beach", icon: "🌴", lat: 43.1433, lng: 16.5356, country: "Croatia", type: "pebble" },
+  { name: "Queen’s Beach (Nin)", icon: "🌴", lat: 44.2467, lng: 15.1831, country: "Croatia", type: "sand" },
+  { name: "Rajska Plaža (Paradise Beach)", icon: "🌴", lat: 44.7833, lng: 14.7269, country: "Croatia", type: "sand" },
+  { name: "Zrće Beach", icon: "🌴", lat: 44.5472, lng: 15.0992, country: "Croatia", type: "pebble" },
+  { name: "Slanica Beach", icon: "🌴", lat: 43.8225, lng: 15.5892, country: "Croatia", type: "sand" },
+
+  // 🐚 Ocean beaches (Atlantic, Pacific, Indian)
+  { name: "Bondi Beach", icon: "🐚", lat: -33.8915, lng: 151.2767, country: "Australia", type: "sand" },
+  { name: "Whitehaven Beach", icon: "🐚", lat: -20.2827, lng: 149.0380, country: "Australia", type: "sand" },
+  { name: "Lanikai Beach", icon: "🐚", lat: 21.3911, lng: -157.7161, country: "USA", type: "sand" },
+  { name: "Reynisfjara Beach", icon: "🐚", lat: 63.4045, lng: -19.0456, country: "Iceland", type: "rock" },
+  { name: "Anse Lazio", icon: "🐚", lat: -4.3146, lng: 55.7042, country: "Seychelles", type: "sand" },
+  { name: "Anse Source d Argent", icon: "🐚", lat: -4.3733, lng: 55.8275, country: "Seychelles", type: "rock" },
+  { name: "Grace Bay", icon: "🐚", lat: 21.7995, lng: -72.1785, country: "Turks and Caicos", type: "sand" },
+  { name: "Seven Mile Beach", icon: "🐚", lat: 19.3180, lng: -81.3857, country: "Cayman Islands", type: "sand" },
+  { name: "Diani Beach", icon: "🐚", lat: -4.2806, lng: 39.5942, country: "Kenya", type: "sand" },
+  { name: "Pink Sands Beach", icon: "🐚", lat: 25.5000, lng: -76.6333, country: "Bahamas", type: "sand" },
+  { name: "Playa del Amor", icon: "🐚", lat: 20.6975, lng: -105.5708, country: "Mexico", type: "sand" },
+  { name: "Matira Beach", icon: "🐚", lat: -16.5205, lng: -151.7515, country: "French Polynesia", type: "sand" },
+  { name: "Camps Bay Beach", icon: "🐚", lat: -33.9519, lng: 18.3773, country: "South Africa", type: "sand" },
+  { name: "Copacabana Beach", icon: "🐚", lat: -22.9711, lng: -43.1822, country: "Brazil", type: "sand" },
+  { name: "Ipanema Beach", icon: "🐚", lat: -22.9833, lng: -43.2000, country: "Brazil", type: "sand" },
+  { name: "Waikiki Beach", icon: "🐚", lat: 21.2766, lng: -157.8223, country: "USA", type: "sand" },
+  { name: "Santa Monica Beach", icon: "🐚", lat: 34.0194, lng: -118.4912, country: "USA", type: "sand" },
+  { name: "Malibu Beach", icon: "🐚", lat: 34.0259, lng: -118.7798, country: "USA", type: "sand" },
+  { name: "Huntington Beach", icon: "🐚", lat: 33.6603, lng: -118.0000, country: "USA", type: "sand" },
+  { name: "Laguna Beach", icon: "🐚", lat: 33.5426, lng: -117.7854, country: "USA", type: "sand" },
+
+  // 🌅 Lake beaches (freshwater)
+  { name: "Plage de Neuchâtel", icon: "🌅", lat: 46.9911, lng: 6.9293, country: "Switzerland", type: "sand" },
+  { name: "Lago di Garda Beach", icon: "🌅", lat: 45.6419, lng: 10.6366, country: "Italy", type: "pebble" },
+  { name: "Sylvan Lake Beach", icon: "🌅", lat: 52.3111, lng: -114.0833, country: "Canada", type: "sand" },
+  { name: "Lake Tahoe Sand Harbor", icon: "🌅", lat: 39.2060, lng: -119.9280, country: "USA", type: "sand" },
+  { name: "Playa del Lago Nahuel Huapi", icon: "🌅", lat: -41.1335, lng: -71.3103, country: "Argentina", type: "pebble" },
+  { name: "Playa de los Muertos", icon: "🌅", lat: 20.5734, lng: -105.2424, country: "Mexico", type: "sand" },
+  { name: "Lake Bled Beach", icon: "🌅", lat: 46.3625, lng: 14.0944, country: "Slovenia", type: "sand" },
+  { name: "Playa de la Concha (San Sebastián)", icon: "🌅", lat: 43.3214, lng: -1.9814, country: "Spain", type: "sand" },
+  { name: "Playa de las Teresitas (Tenerife)", icon: "🌅", lat: 28.4800, lng: -16.2500, country: "Spain", type: "sand" },
+  { name: "Playa de Maspalomas (Gran Canaria)", icon: "🌅", lat: 27.7500, lng: -15.5500, country: "Spain", type: "sand" }
+];
+
+const map = L.map("map", { attributionControl: false }).setView([44.1, 15.2], 6);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>'
+}).addTo(map);
+L.control.attribution({
+  position: 'bottomright',
+  attribution: '<small><a href="https://www.openstreetmap.org/copyright" target="_blank">© OpenStreetMap contributors</a></small>'
+}).addTo(map)
+
+// 🦜 Current location
+navigator.geolocation?.getCurrentPosition(pos => {
+  const { latitude, longitude } = pos.coords;
+  L.marker([latitude, longitude], {
+    icon: L.divIcon({ className: "emoji-marker", html: "🦜", iconSize: [30,30], iconAnchor: [15,15] })
+  }).bindPopup("You are here").addTo(map);
+});
+
+const markerMap = new Map();
+
+function getFavorites() {
+  return JSON.parse(localStorage.getItem("favoriteBeaches") || "[]");
+}
+function getRecents() {
+  return JSON.parse(localStorage.getItem("recentBeaches") || "[]");
+}
+function saveRecent(name) {
+  const recents = getRecents().filter(r => r !== name);
+  recents.unshift(name);
+  localStorage.setItem("recentBeaches", JSON.stringify(recents.slice(0, 10)));
+  refreshRecents();
+}
+function toggleFavorite(name, icon, lat=0, lng=0) {
+  let favs = getFavorites();
+  const i = favs.findIndex(b => b.name === name);
+  if (i >= 0) {
+    favs.splice(i, 1);
+  } else {
+    const emoji = prompt("Pick emoji for this beach", icon) || icon;
+    favs.push({ name, icon: emoji, lat: lat, lng: lng });
+  }
+  localStorage.setItem("favoriteBeaches", JSON.stringify(favs));
+  refreshFavorites();
+}
+function selectBeach(b) {
+  saveRecent(b.name);
+  const name = encodeURIComponent(b.name);
+  window.location.href = `beach.html?name=${name}&lat=${b.lat}&lng=${b.lng}`;
+}
+function createMarker(b) {
+  const isFav = !!getFavorites().find(f => f.name === b.name);
+  const popup = `
+    <strong>${b.name}</strong><br/>
+    <button class="button button-default" onclick="toggleFavorite('${b.name}', '${b.icon}', ${b.lat}, ${b.lng})">
+      ${isFav ? "❌ Remove from" : "💙 Add to"} favorites
+    </button><br/>
+    <button onclick="window.location.href = "https://www.google.com/maps?q=${b.lat},${b.lng}"" class="button button-default">
+      📍 Open in Google Maps
+    </button><br/>
+    <button class="button button-accent" onclick='selectBeach(${JSON.stringify(b)})'>
+      Select this beach
+    </button>
+  `;
+  const marker = L.marker([b.lat, b.lng], {
+    icon: L.divIcon({ className: "emoji-marker", html: `<div style="font-size: 1.4rem">${b.icon}</div>`, iconSize: [30,30], iconAnchor: [15,15] })
+  }).bindPopup(popup).addTo(map);
+
+  markerMap.set(b.name, marker);
+}
+
+function updateMarkers(beachList) {
+  markerMap.clear();
+  map.eachLayer(layer => {
+    if (layer instanceof L.Marker && !layer._popup?.getContent()?.includes("You are here")) {
+      map.removeLayer(layer);
+    }
+  });
+  beachList.forEach(createMarker);
+  console.log("Filtered:", beachList);
+}
+
+function refreshFavorites() {
+  const favs = getFavorites();
+  console.log(favs);
+  const container = document.getElementById("favoritesList");
+  container.innerHTML = "";
+  if (favs.length === 0) {
+    container.innerHTML = "<p>No favorites yet. Add some by clicking the 💙 button on a beach marker.</p>";
+    return;
+  }
+  favs.forEach(b => {
+    const div = document.createElement("div");
+    div.className = "list-card";
+    div.onclick = (e) => {
+      // Only trigger if the card itself (not a button or its child) is clicked
+      if (e.target === div || e.target === info) {
+      const m = markerMap.get(b.name);
+      if (m) {
+        const { lat, lng } = m.getLatLng();
+        const beach = { name: b.name, lat, lng };
+        selectBeach(beach);
+      } else {
+        alert("Oops! This beach is not available on the map.");
+        console.warn("Marker not found for:", b.name);
+      }
+      }
+    };
+
+    const info = document.createElement("div");
+    info.innerHTML = `<p>${b.icon} ${b.name}</p>`;
+    info.onclick = (e) => {
+      const m = markerMap.get(b.name);
+      if (m) {
+        const { lat, lng } = m.getLatLng();
+        const beach = { name: b.name, lat, lng };
+        selectBeach(beach);
+      } else {
+        alert("Oops! This beach is not available on the map.");
+        console.warn("Marker not found for:", b.name);
+      }
+    };
+
+    const btns = document.createElement("div");
+    btns.className = "card-buttons";
+
+    const jump = document.createElement("button");
+    jump.className = "button button-text list-card-actions";
+    jump.textContent = "📍";
+    jump.title = "Show on map";
+    jump.onclick = () => {
+      const m = markerMap.get(b.name);
+      if (m) {
+        map.setView(m.getLatLng(), 10);
+        m.openPopup();
+      }
+    };
+
+    const remove = document.createElement("button");
+    remove.className = "button button-text list-card-actions";
+    remove.textContent = "❌";
+    remove.title = "Remove from favorites";
+    remove.onclick = () => toggleFavorite(b.name, b.icon);
+
+    btns.appendChild(jump);
+    btns.appendChild(remove);
+    div.appendChild(info);
+    div.appendChild(btns);
+    container.appendChild(div);
+  });
+}
+
+function refreshRecents() {
+  const recent = getRecents();
+  const select = document.getElementById("recentBeaches");
+  select.innerHTML = '<option disabled selected>Select recent beach…</option>';
+  recent.forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+
+  });
+  while (recent.length > 7) {
+    recent.pop();
+  }
+}
+
+document.getElementById("recentBeaches").addEventListener("change", (e) => {
+  const name = e.target.value;
+  const m = markerMap.get(name);
+  if (m) {
+    map.setView(m.getLatLng(), 10);
+    m.openPopup();
+  }
+});
+
+function filterBeaches() {
+  const name = searchInput.value.toLowerCase();
+  const country = countrySelect.value;
+  const type = typeSelect.value;   // e.g. "sand", "pebble", "rock"
+  const icon = positionSelect.value;   // e.g. "🌴", "🐚", "🌅"
+
+  return beaches.filter(b =>
+    (!name || b.name.toLowerCase().includes(name)) &&
+    (!country || b.country === country) &&
+    (!type || b.type === type) &&
+    (!icon || b.icon === icon)
+  );
+}
+
+function populateCountryFilter() {
+  const countries = [...new Set(beaches.map(b => b.country))].sort();
+  countries.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    countrySelect.appendChild(opt);
+  });
+}
+
+// Event listeners
+searchInput.addEventListener("input", () => updateMarkers(filterBeaches()));
+countrySelect.addEventListener("change", () => updateMarkers(filterBeaches()));
+positionSelect.addEventListener("change", () => updateMarkers(filterBeaches()));
+typeSelect.addEventListener("change", () => updateMarkers(filterBeaches()));
+
+// Init
+populateCountryFilter();
+refreshFavorites();
+refreshRecents();
+const initialList = beaches.filter(b => b); // sanity check
+updateMarkers(initialList);
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <button onclick="window.location.href = 'about.html'" class="button button-text">← Back</button>
+
+    <h1>🌴 SeaChill terms & conditions</h1>
+
+    <p>Welcome to SeaChill – your relaxing companion for tracking sea temperatures and enjoying the ocean responsibly.</p>
+    <p>By using SeaChill, you need to follow these rules:</p>
+    <ul>
+      <li><strong>🌴 Copying</strong> - You can make your custom sea app based on SeaChill, but it must be free and please give a small shout-out to the OG SeaChill.</li>
+      <li><strong>🌊 Respect</strong> - Use SeaChill responsibly and respect local guidelines and nature when enjoying the sea.</li>
+      <li><strong>🏄‍♂️ Health & safety</strong> - SeaChill is just for fun and info, not for emergencies or life-saving. Please use your own judgment and stay safe out there — always follow local rules and be careful in and around the sea. We’re not responsible for any mishaps, so take care and enjoy responsibly!</li>
+      <li><strong>⛈ Updates</strong> - this may get updated, but I'll tell you about major changes to the rules beforehand.</li>
+      <li><strong>🧭 Not fully accurate</strong> - the data may not be 100% perfect, so it isn't our fault if there is sunny weather in the forecast and then rain comes.</li>
+    </ul>
+    <p>If you have privacy concerns, go back to the about page to read about the privacy. Spoiler alert - no tracking</p>
+  </main>
+
+<script>
+const themeMap = {
+  light: "light.css",
+  dark: "dark.css",
+  twilight: "twilight.css",
+  jungle: "jungle.css",
+  breeze: "breeze.css",
+  void: "void.css"
+};
+
+function applyTheme(theme) {
+  const link = document.getElementById("themeStylesheet");
+  if (themeMap[theme]) {
+    link.href = themeMap[theme];
+  } else {
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    link.href = prefersDark ? themeMap.dark : themeMap.light;
+  }
+}
+
+applyTheme(localStorage.getItem("preferredTheme") || "light");
+</script>
+</body>
+</html>

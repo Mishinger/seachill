@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SeaChill</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <header style="text-align: center;">
+      <img src="logo.png" alt="SeaChill Logo" width="80" height="80" />
+      <h1>SeaChill</h1>
+    </header>
+
+    <section>
+      <h2>🌴 Hi <span id="name">bro</span>!</h2>
+      <p>You haven’t selected a spot yet. Let’s get you some sunny vibes.</p>
+      <button onclick="location.href='select.html'" class="button button-accent">Select a beach</button>
+      <button onclick="addTile()" class="button button-text">+</button>
+    </section>
+
+    <section class="card" id="beach">
+      <h2>🌊 Beach details  <button class="button button-text" onclick="removeTile('beach')">X</button></h2>
+      <p><strong id="bName">---</strong></p>
+      <h3 id="bRec">-/10</h3>
+      <button id="bLink" class="button button-default">Show me more</button>
+    </section>
+
+    <section class="card" id="features">
+      <h2>🌞 What you’ll get <button class="button button-text" onclick="removeTile('features')">X</button></h2>
+      <ul>
+        <li>Live UV index and sun warnings</li>
+        <li>Tide and weather forecast</li>
+        <li>Reccomendations on what to (not) do</li>
+        <li>And more...</li>
+      </ul>
+    </section>
+
+    <section class="card" id="explore">
+      <h2>🍹 Explore more <button class="button button-text" onclick="removeTile('explore')">X</button></h2>
+      <button onclick="window.location.href='settings.html'" class="button button-default">Settings</button>
+      <button onclick="window.location.href='about.html'" class="button button-default">About</button>
+      <button onclick="window.location.href='embed.html'" class="button button-default">For devs (experimental)</button>
+    </section>
+
+    <footer>
+      <p></p>
+    </footer>
+  </main>
+<script>
+const savedTheme = localStorage.getItem("preferredTheme");
+
+if (!savedTheme) {
+  window.location.href = 'setup.html';
+}
+
+const themeMap = {
+  light: "light.css",
+  dark: "dark.css",
+  twilight: "twilight.css",
+  jungle: "jungle.css",
+  breeze: "breeze.css",
+  void: "void.css"
+};
+
+const themeLink = document.getElementById("themeStylesheet");
+themeLink.href = themeMap[savedTheme] || (window.matchMedia("(prefers-color-scheme: dark)").matches ? themeMap.dark : themeMap.light);
+
+const allTiles = ["beach", "features", "explore"];
+let myTileList;
+
+try {
+  const raw = localStorage.getItem("enabledTiles");
+  myTileList = JSON.parse(raw);
+
+  // Validate that it's an array
+  if (!Array.isArray(myTileList)) {
+    throw new Error("enabledTiles is not an array");
+  }
+} catch (err) {
+  console.warn("Invalid enabledTiles format—falling back to default.");
+  myTileList = ["beach", "features", "explore"];
+  localStorage.setItem("enabledTiles", JSON.stringify(myTileList));
+}
+
+// Call this right away to apply visibility
+refreshTiles();
+
+const preferredTemp = parseFloat(localStorage.getItem("preferredBeachTemp")) || 3;
+const seaTemp = parseFloat(localStorage.getItem("seaTemp")) || 28;
+const tempTolerance = parseFloat(localStorage.getItem("tempTolerance")) || 3;
+
+function computeScore(temp, sea, wind, humidity, uv, wave, code = 0, pm25 = 0) {
+  function toleranceScore(actual, target) {
+    const diff = Math.abs(actual - target);
+    return diff <= tempTolerance ? 10 : Math.max(0, 10 - (diff - tempTolerance));
+  }
+
+  const airScore = toleranceScore(temp, preferredTemp);
+  const seaScore = toleranceScore(sea, seaTemp);
+  const windPenalty = wind > 50 ? 5 : wind > 30 ? 2 : wind > 20 ? 1 : 0;
+  const humidityPenalty = humidity > 80 ? 1 : 0;
+  const uvPenalty = uv > 8 ? 2 : uv > 6 ? 1 : 0;
+  const wavePenalty = wave > 2 ? 2 : wave > 1.5 ? 1 : 0;
+  const conditionPenalty = code >= 95 ? 5 : code >= 80 ? 3 : code >= 60 ? 1 : 0;
+  const pm25Penalty = pm25 <= 12 ? 0 : pm25 <= 35.4 ? 1 : pm25 <= 55.4 ? 2 : pm25 <= 150 ? 3 : pm25 <= 250 ? 4 : 5;
+
+  const total = (airScore + seaScore) / 2 -
+    windPenalty - humidityPenalty - uvPenalty -
+    wavePenalty - conditionPenalty - pm25Penalty;
+
+  return {
+    total: Math.max(0, Math.min(10, total)),
+    breakdown: { airScore, seaScore, windPenalty, humidityPenalty, uvPenalty, wavePenalty, conditionPenalty, pm25Penalty }
+  };
+}
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function getNearestBeach(favs) {
+  if (!Array.isArray(favs) || favs.length === 0) {
+    return Promise.resolve({ name: "No favorites 🥲", lat: 0, lng: 0 });
+  }
+
+  return new Promise((resolve) => {
+    function findClosest(position) {
+      const { latitude, longitude } = position.coords;
+      let closest = null;
+      let shortest = Infinity;
+
+      favs.forEach(beach => {
+        const dist = haversine(latitude, longitude, parseFloat(beach.lat), parseFloat(beach.lng));
+        if (dist < shortest) {
+          shortest = dist;
+          closest = beach;
+        }
+      });
+
+      resolve(closest);
+    }
+
+    function fallbackRandom() {
+      resolve(favs[Math.floor(Math.random() * favs.length)]);
+    }
+
+    navigator.geolocation.getCurrentPosition(findClosest, fallbackRandom, {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0
+    });
+  });
+}
+
+const favs = JSON.parse(localStorage.getItem("favoriteBeaches")) || [];
+
+getNearestBeach(favs).then(closest => {
+  console.log("Closest beach:", closest);
+
+  const weatherURL = `https://api.open-meteo.com/v1/forecast?latitude=${closest.lat}&longitude=${closest.lng}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,uv_index`;
+  const marineURL = `https://marine-api.open-meteo.com/v1/marine?latitude=${closest.lat}&longitude=${closest.lng}&current=wave_height,sea_surface_temperature`;
+  const airURL = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${closest.lat}&longitude=${closest.lng}&current=pm2_5`;
+
+  Promise.all([fetch(weatherURL), fetch(marineURL), fetch(airURL)])
+    .then(responses => Promise.all(responses.map(res => res.json())))
+    .then(([weather, marine, air]) => {
+      const bTemp = weather.current.temperature_2m;
+      const bHumidity = weather.current.relative_humidity_2m;
+      const bWind = weather.current.wind_speed_10m;
+      const bUV = weather.current.uv_index;
+      const bCode = weather.current.weather_code;
+      const bSea = marine.current.sea_surface_temperature;
+      const bWave = marine.current.wave_height;
+      const bPM25 = air.current.pm2_5;
+
+      const { total, breakdown } = computeScore(bTemp, bSea, bWind, bHumidity, bUV, bWave, bCode, bPM25);
+      const bRecObj = document.getElementById("bRec");
+      const bNameObj = document.getElementById("bName");
+      const bLinkObj = document.getElementById("bLink");
+
+      bRecObj.textContent = `${total}/10`;
+      bRecObj.style.color = total >= 9 ? "#095FFF" : total >= 7 ? "#20BA16" : total >= 4 ? "#78BA01" : total >= 1 ? "#EE4F00" : "#FF0000";
+      bNameObj.textContent = closest.name;
+      bLinkObj.onclick = () => {
+        const query = new URLSearchParams({
+          name: closest.name,
+          lat: closest.lat,
+          lng: closest.lng
+        }).toString();
+      
+        location.href = `beach.html?${query}`;
+      };
+    })
+    .catch(err => {
+      console.error("Failed to fetch beach vibes:", err);
+    });
+});
+
+function addTile() {
+  Swal.fire({
+    title: 'What do you want to add?',
+    input: 'radio',
+    theme: 'auto',
+    inputOptions: {
+      beach: '🌊 Info about the closest beach',
+      features: '🌞 Basic overview of SeaChill\'s features',
+      explore: '🍹 Links for exploring more of this app'
+    },
+    inputValidator: value => !value && 'pls select one bro',
+    showCancelButton: true,
+    confirmButtonText: 'Add tile'
+  }).then(result => {
+    if (result.value) {
+      myTileList.push(result.value);
+      refreshTiles();
+    }
+  });
+}
+
+function refreshTiles() {
+  allTiles.forEach(tile => {
+    const el = document.getElementById(tile);
+    if (el) {
+      el.style.display = myTileList.includes(tile) ? "block" : "none";
+    }
+  });
+
+  localStorage.setItem("enabledTiles", JSON.stringify(myTileList));
+}
+
+function removeTile(name) {
+  console.log("Removing:", name);
+  myTileList = myTileList.filter(tile => tile !== name);
+  localStorage.setItem("enabledTiles", JSON.stringify(myTileList));
+  refreshTiles();
+}
+</script>
+</body>
+</html

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Setup • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main style="text-align: center;">
+    <img src="logo.png" alt="SeaChill logo" width="200" height="200">
+    <h1>Welcome to SeaChill</h1>
+    <p>Your personal beach comfort assistant</p>
+    <button class="button button-accent" onclick="next()">Get started</button>
+    <p><button class="button button-text" onclick="alert('SeaChill doesn’t track you or send data to any server. Your preferences—like your favorite temperature, theme, and chosen beach—are saved locally in your browser using localStorage.These settings are only used to improve your experience and are never shared.')">Cookies</button><button class="button button-text" onclick="window.location.href = 'setupimport.html'">Use recovery code</button><button class="button button-text" onclick="window.location.href = 'setuptos.html'">ToS</button></p>
+  </main>
+
+  <script>
+    const themes = {
+      light: "light.css",
+      dark: "dark.css",
+      twilight: "twilight.css",
+      jungle: "jungle.css"
+    };
+    const saved = localStorage.getItem("preferredTheme");
+    const themeLink = document.getElementById("themeStylesheet");
+    if (themes[saved]) {
+      themeLink.href = themes[saved];
+    }
+
+    function next() {
+      window.location.href = "setup2.html";
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Edit profile • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <button class="button-text" id="saveBtn">← Back</button>
+      <h1>✏️ Edit SeaChill profile</h1>
+      <p>Your vibe, your emoji — make it shine bro</p>
+    </header>
+
+    <section>
+      <h3>Name</h3>
+      <input type="text" id="nameInput" placeholder="Name" />
+      <br/><br/>
+
+      <h3>Emoji avatar</h3>
+      <input type="text" id="emojiInput" placeholder="Emoji" style="font-size: 2rem; text-align: center;" />
+      <div style="text-align: center;">
+        <button id="surpriseBtn" title="Random emoji" class="button-text" style="margin-left: 0.5em;">🎲</button>
+      </div>
+      <br/><br/>
+
+      <h3>Gender</h3>
+      <select id="genderInput">
+        <option value="">Not set</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Nonbinary">Nonbinary</option>
+        <option value="Prefer not to say">Prefer not to say</option>
+      </select>
+      <br/><br/>
+
+      <h3>Bio</h3>
+      <textarea id="bioInput" placeholder="Tell us your beach vibe…" rows="3"></textarea>
+      <div style="text-align: center;">
+        
+      </div>
+      <br/><br/>
+
+      <h3>Avatar background color</h3>
+      <input type="color" id="colorInput" value="#00bcd4" />
+      <br/><br/>
+    </section>
+
+    <footer>
+      <p><em>Your info never leaves your beach towel 🐚</em></p>
+    </footer>
+  </main>
+
+  <script>
+    // 🌗 Theme handler
+    const themeMap = {
+      light: "light.css",
+      dark: "dark.css",
+      twilight: "twilight.css",
+      jungle: "jungle.css",
+      breeze: "breeze.css",
+      void: "void.css"
+    };
+    const selectedTheme = localStorage.getItem("preferredTheme") || "system";
+    const themeEl = document.getElementById("themeStylesheet");
+
+    themeEl.href = themeMap[selectedTheme] || (
+      window.matchMedia("(prefers-color-scheme: dark)").matches ? themeMap.dark : themeMap.light
+    );
+
+    // 🎛️ Form setup
+    const $ = id => document.getElementById(id);
+    const profile = JSON.parse(localStorage.getItem("seaProfile") || "{}");
+
+    $("nameInput").value   = profile.username || "";
+    $("emojiInput").value  = profile.avatar || "🌴";
+    $("genderInput").value = profile.gender || "";
+    $("bioInput").value    = profile.bio || "";
+    $("colorInput").value  = profile.color || "#00bcd4";
+
+    // 🧍 Preserve full emoji graphemes (e.g. skin tones)
+    $("emojiInput").addEventListener("input", () => {
+      const graphemes = Array.from($("emojiInput").value);
+      $("emojiInput").value = graphemes.slice(0, 1).join(""); // keep full visual emoji
+    });
+
+    // 🎲 Surprise button
+    const emojiPool = [
+      "🌴", "🍍", "🏄🏻‍♂️", "🧜🏾‍♀️", "🪸", "🐠", "☀️", "🌊", "🦀", "🐚", "🏖️", "👨🏽‍🦱", "👨🏻", "🧑🏻", "👩🏽", "🌺", "🌅", "🧭", "👨🏻‍🦱", "💧", "😀", "🥥", "🍹", "🍸", "🥝", "🍉", "🏄🏻‍♂️", "🏄🏾‍♀️", "🐅", "🍃", "🐆"
+    ];
+    $("surpriseBtn").onclick = () => {
+      const random = emojiPool[Math.floor(Math.random() * emojiPool.length)];
+      $("emojiInput").value = random;
+    };
+
+    // 💾 Save handler
+    $("saveBtn").onclick = () => {
+      const updated = {
+        username: $("nameInput").value.trim(),
+        avatar: $("emojiInput").value.trim(),
+        gender: $("genderInput").value,
+        bio: $("bioInput").value.trim(),
+        color: $("colorInput").value
+      };
+      localStorage.setItem("seaProfile", JSON.stringify(updated));
+      window.location.href = "profile.html"
+    };
+  </script>
+</body>
+</html>

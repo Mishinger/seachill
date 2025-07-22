@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Setup • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <button onclick="window.location.href='setup.html'" class="button button-text">← Back</button>
+    <h1>🎨 Choose your theme</h1>
+    <p>Select the look that fits your vibe</p>
+
+    <div class="theme-grid">
+      <div class="theme-card" data-theme="light"><span>☀️</span>Beach</div>
+      <div class="theme-card" data-theme="dark"><span>🌊</span>Tide</div>
+      <div class="theme-card" data-theme="twilight"><span>🌆</span>Twilight</div>
+      <div class="theme-card" data-theme="jungle"><span>🌿</span>Jungle</div>
+      <div class="theme-card" data-theme="breeze"><span>💧</span>Breeze</div>
+      <div class="theme-card" data-theme="void"><span>🟣</span>Void</div>
+    </div>
+
+    <button class="button button-accent" onclick="nextStep()" disabled id="nextBtn">Next</button>
+  </main>
+
+  <script>
+    const themeMap = {
+      light: "light.css",
+      dark: "dark.css",
+      twilight: "twilight.css",
+      jungle: "jungle.css",
+      breeze: "breeze.css",
+      void: "void.css"
+    };
+
+    const cards = document.querySelectorAll(".theme-card");
+    const nextBtn = document.getElementById("nextBtn");
+    const link = document.getElementById("themeStylesheet");
+    let selectedTheme = null;
+
+    cards.forEach(card => {
+      card.addEventListener("click", () => {
+        cards.forEach(c => c.classList.remove("selected"));
+        card.classList.add("selected");
+        selectedTheme = card.dataset.theme;
+        localStorage.setItem("preferredTheme", selectedTheme);
+        link.href = themeMap[selectedTheme];
+        nextBtn.disabled = false;
+      });
+    });
+
+    function nextStep() {
+      if (selectedTheme) {
+        window.location.href = "setup3.html";
+      }
+    }
+
+    // Load previously selected theme (if backtracked)
+    const saved = localStorage.getItem("preferredTheme");
+    if (saved && themeMap[saved]) {
+      link.href = themeMap[saved];
+      const match = document.querySelector(`[data-theme="${saved}"]`);
+      if (match) {
+        match.classList.add("selected");
+        selectedTheme = saved;
+        nextBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

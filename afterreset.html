@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reset Complete • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <header style="text-align: center;">
+      <h1>Your data has been removed</h1>
+      <p>Feel free to start again fresh with SeaChill!</p>
+    </header>
+
+    <section class="card" style="text-align: center;">
+      <button type="button" onclick="window.location.href='setup.html'" class="button button-accent">Start fresh</button>
+      <button type="button" onclick="window.location.href='https://www.bing.com'" class="button button-default">Browse the web</button>
+    </section>
+
+    <footer>
+    </footer>
+  </main>
+
+  <script>
+    const themeMap = {
+      light: "light.css",
+      dark: "dark.css",
+      twilight: "twilight.css",
+      jungle: "jungle.css",
+      breeze: "breeze.css",
+      void: "void.css"
+    };
+
+    function applyTheme(theme) {
+      const link = document.getElementById("themeStylesheet");
+      if (themeMap[theme]) {
+        link.href = themeMap[theme];
+      } else {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        link.href = prefersDark ? themeMap.dark : themeMap.light;
+      }
+    }
+
+    applyTheme(localStorage.getItem("theme") || "light");
+  </script>
+</body>
+</html>

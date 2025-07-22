@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Import data • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css"/>
+</head>
+<body>
+  <main>
+    <h1>🍸 Pick up where you left off</h1>
+    <p>Did you use SeaChill before? If you have a <strong>recovery code</strong>, paste it here to get back to your sunny beach day.</p>
+    <form id="recoveryForm">
+    <div class="form-group">
+      <label for="recoveryCode">Recovery code</label>
+      <input type="text" id="recoveryCode" name="recoveryCode" placeholder="Enter your recovery code" required />
+    </div>
+    <p></p>
+    <button type="submit" class="button button-accent" id="recoverBtn">Recover</button>
+    <button type="button" onclick="window.location.href='data.html'" class="button button-default">Cancel</button>
+    </form>
+  </main>
+
+  <script>
+    const form = document.getElementById("recoveryForm");
+    form.addEventListener("submit", function(event) {
+      event.preventDefault();
+      const code = document.getElementById("recoveryCode").value.trim();
+      try {
+        const data = JSON.parse(atob(code));
+        if (typeof data === "object" && data !== null) {
+          for (const [key, value] of Object.entries(data)) {
+            localStorage.setItem(key, JSON.stringify(value));
+          }
+          window.location.href = "index.html";
+        } else {
+          alert("Invalid recovery code format.");
+        }
+      } catch (e) {
+        alert("Invalid recovery code.");
+      }
+    });
+
+  </script>
+  <script>
+    const themeMap = {
+      light: "light.css",
+      dark: "dark.css",
+      twilight: "twilight.css",
+      jungle: "jungle.css",
+      breeze: "breeze.css",
+      void: "void.css"
+    };
+
+    function applyTheme(theme) {
+      const link = document.getElementById("themeStylesheet");
+      if (themeMap[theme]) {
+        link.href = themeMap[theme];
+      } else {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        link.href = prefersDark ? themeMap.dark : themeMap.light;
+      }
+    }
+
+    applyTheme(localStorage.getItem("preferredTheme") || "light");
+  </script>
+</body>
+</html>

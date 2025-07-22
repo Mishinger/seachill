@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PIN Unlock • SeaChill</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="light.css" />
+  <link id="themeStylesheet" rel="stylesheet" href="light.css" />
+</head>
+<body>
+  <main>
+    <header>        
+      <button id="backBtn" class="button button-text">← Back</button>
+      <h1>🔐 Unlock SeaChill</h1>
+      <p>Enter your 4-emoji PIN to continue</p>
+    </header>
+
+    <section class="card">
+      <input
+        id="pin"
+        type="text"
+        autocomplete="off"
+        placeholder="????" />
+    </section>
+
+    <footer>  
+      <button id="continueBtn" class="button button-accent">Continue</button>
+      <p><em>Your data never leaves this beach 🌴</em></p>
+    </footer>
+  </main>
+
+<script>
+// --- Theme Setup ---
+const themeMap = {
+  light: "light.css",
+  dark: "dark.css",
+  twilight: "twilight.css",
+  jungle: "jungle.css",
+  breeze: "breeze.css",
+  void: "void.css"
+};
+
+const savedTheme = localStorage.getItem("prefferedTheme") || "light";
+const themeLink = document.getElementById("themeStylesheet");
+
+if (themeMap[savedTheme]) {
+  themeLink.href = themeMap[savedTheme];
+} else {
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  themeLink.href = prefersDark ? themeMap.dark : themeMap.light;
+}
+
+// --- Auth Logic ---
+const params = new URLSearchParams(location.search);
+const from = params.get("from") || "index.html";
+const to = params.get("to") || "index.html";
+
+const enablePIN = localStorage.getItem("enablePIN") || "true";
+const storedPIN = localStorage.getItem("emojiPIN") || "🐆🐆🐆🐆";
+
+if (enablePIN !== "true") {
+  window.location.href = to;
+}
+
+const pinInput = document.getElementById("pin");
+
+pinInput.addEventListener("input", () => {
+  const graphemes = Array.from(pinInput.value);
+  if (graphemes.length > 4) {
+    pinInput.value = graphemes.slice(0, 4).join("");
+  }
+});
+
+document.getElementById("backBtn").onclick = () => {
+  window.location.href = from;
+};
+
+document.getElementById("pin").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") {
+    submitCode();
+  }
+});
+
+document.getElementById("continueBtn").onclick = () => {
+  submitCode()
+};
+
+function submitCode() {
+  const input = document.getElementById("pin").value.trim();
+  if (input === storedPIN) {
+    window.location.href = to;
+  } else {
+    alert("❌ Wrong PIN — try again!");
+  }
+};
+</script>
+</body>
+</html>
