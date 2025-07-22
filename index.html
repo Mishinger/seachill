@@ -173,8 +173,9 @@ function getNearestBeach(favs) {
 const favs = JSON.parse(localStorage.getItem("favoriteBeaches")) || [];
 
 const profile = JSON.parse(localStorage.getItem("seaProfile") || "{}");
-document.getElementById("pEmoji").innerText = profile.avatar
-document.getElementById("pName").innerText = profile.username
+if (profile.avatar !== undefined) document.getElementById("pEmoji").innerText = profile.avatar
+if (profile.username !== undefined) document.getElementById("pName").innerText = profile.username
+if (profile.username !== undefined) document.getElementById("name").innerText = profile.username
 
 getNearestBeach(favs).then(closest => {
   console.log("Closest beach:", closest);
