@@ -23,10 +23,17 @@
     </section>
 
     <section class="card" id="beach">
-      <h2>🌊 Beach details  <button class="button button-text" onclick="removeTile('beach')">X</button></h2>
+      <h2>🌊 Beach details <button class="button button-text" onclick="removeTile('beach')">X</button></h2>
       <p><strong id="bName">---</strong></p>
       <h3 id="bRec">-/10</h3>
       <button id="bLink" class="button button-default">Show me more</button>
+    </section>
+
+    <section class="card" id="profile">
+      <h2>🦀 Me <button class="button button-text" onclick="removeTile('profile')">X</button></h2></h2>
+      <h1 id="pEmoji">👤</h1>
+      <p id="pName">Annonymous</p>
+      <button class="button button-default" onclick="window.location.href = 'profile.html'">See more...</button>
     </section>
 
     <section class="card" id="features">
@@ -165,6 +172,10 @@ function getNearestBeach(favs) {
 
 const favs = JSON.parse(localStorage.getItem("favoriteBeaches")) || [];
 
+const profile = JSON.parse(localStorage.getItem("seaProfile") || "{}");
+document.getElementById("pEmoji").innerText = profile.avatar
+document.getElementById("pName").innerText = profile.username
+
 getNearestBeach(favs).then(closest => {
   console.log("Closest beach:", closest);
 
@@ -214,6 +225,7 @@ function addTile() {
     theme: 'auto',
     inputOptions: {
       beach: '🌊 Info about the closest beach',
+      beach: '🦀 My profile',
       features: '🌞 Basic overview of SeaChill\'s features',
       explore: '🍹 Links for exploring more of this app'
     },
