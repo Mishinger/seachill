@@ -201,7 +201,7 @@ getNearestBeach(favs).then(closest => {
       const bNameObj = document.getElementById("bName");
       const bLinkObj = document.getElementById("bLink");
 
-      bRecObj.textContent = `${total}/10`;
+      bRecObj.textContent = `${total.toFixed(1)}/10`;
       bRecObj.style.color = total >= 9 ? "#095FFF" : total >= 7 ? "#20BA16" : total >= 4 ? "#78BA01" : total >= 1 ? "#EE4F00" : "#FF0000";
       bNameObj.textContent = closest.name;
       bLinkObj.onclick = () => {
