@@ -77,7 +77,7 @@ const themeLink = document.getElementById("themeStylesheet");
 themeLink.href = themeMap[savedTheme] || (window.matchMedia("(prefers-color-scheme: dark)").matches ? themeMap.dark : themeMap.light);
 
 const allTiles = ["beach", "profile", "features", "explore"];
-let myTileList;
+let myTileList = allTiles;
 
 try {
   const raw = localStorage.getItem("enabledTiles");
