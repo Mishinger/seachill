@@ -16,7 +16,7 @@
       <p>Manage your saved data and preferences</p>
     </header>
 
-    <section class="card">
+    <section>
       <button type="button" onclick="createRecoveryCode()" class="button button-accent">Get recovery code</button>
       <button type="button" onclick="window.location.href='import.html'" class="button button-default">Use a recovery code</button>
       <button type="button" onclick="alert('Recovery codes allow you to restore your data if you switch devices or clear your browser storage. Keep them safe!')" class="button button-default">About recovery codes</button>
@@ -52,7 +52,13 @@
 
     function resetData() {
       if (confirm("Are you sure you want to remove all your data? You can't go back if you continue!")) {
-        localStorage.clear();
+        for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key.includes(':')) {
+          localStorage.removeItem(key);
+          i--;
+        }
+      }
         window.location.href = "afterreset.html";
       }
     }

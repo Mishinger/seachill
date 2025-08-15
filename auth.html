@@ -16,7 +16,7 @@
       <p>Enter your 4-emoji PIN to continue</p>
     </header>
 
-    <section class="card">
+    <section>
       <input
         id="pin"
         type="text"
@@ -31,7 +31,6 @@
   </main>
 
 <script>
-// --- Theme Setup ---
 const themeMap = {
   light: "light.css",
   dark: "dark.css",
@@ -41,7 +40,7 @@ const themeMap = {
   void: "void.css"
 };
 
-const savedTheme = localStorage.getItem("prefferedTheme") || "light";
+const savedTheme = localStorage.getItem("preferredTheme") || "light";
 const themeLink = document.getElementById("themeStylesheet");
 
 if (themeMap[savedTheme]) {
@@ -56,7 +55,7 @@ const params = new URLSearchParams(location.search);
 const from = params.get("from") || "index.html";
 const to = params.get("to") || "index.html";
 
-const enablePIN = localStorage.getItem("enablePIN") || "true";
+const enablePIN = localStorage.getItem("enablePIN") || "false";
 const storedPIN = localStorage.getItem("emojiPIN") || "🐆🐆🐆🐆";
 
 if (enablePIN !== "true") {
