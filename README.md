@@ -3,4 +3,4 @@ SeaChill is a web app for checking beach stats in a clean and modern way. Also, 
 
 *It is in preview now*
 
-Go to [this page]() to use it.
+Go to [this page](https://mishinger.github.io/seachill) to use it.
